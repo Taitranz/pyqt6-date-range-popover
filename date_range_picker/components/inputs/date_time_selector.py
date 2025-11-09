@@ -60,6 +60,9 @@ class DateTimeSelector(QWidget):
         self._date_input_handlers: dict[InputWithIcon, Callable[[str], None]] = {}
 
         self.apply_palette(self._palette)
+        app = QApplication.instance()
+        if app is not None:
+            app.installEventFilter(self)
         self._build_ui()
 
     def apply_palette(self, palette: ColorPalette) -> None:
@@ -81,6 +84,9 @@ class DateTimeSelector(QWidget):
             parent = a0.parentWidget()
             if isinstance(parent, InputWithIcon):
                 target = parent
+        if a1 is not None and a1.type() is QEvent.Type.MouseButtonPress:
+            if not self._object_is_within_self(a0) and self._focus_within_self():
+                self._clear_focus_from_inputs()
         if target is not None and a1 is not None and a1.type() in {
             QEvent.Type.FocusIn,
             QEvent.Type.FocusOut,
@@ -94,8 +100,6 @@ class DateTimeSelector(QWidget):
                 self._previously_focused_input = target
                 if target in self._date_inputs:
                     self._last_focused_date_input = target
-            elif a1.type() is QEvent.Type.FocusOut:
-                target.clear_previously_focused()
         return super().eventFilter(a0, a1)
 
     def set_mode(self, mode: ModeLiteral) -> None:
@@ -252,6 +256,32 @@ class DateTimeSelector(QWidget):
             self._on_date_input_text_changed(target, text)
 
         return handler
+
+    def _object_is_within_self(self, obj: QObject | None) -> bool:
+        widget: QWidget | None
+        if isinstance(obj, QWidget):
+            widget = obj
+        else:
+            widget = None
+        while widget is not None:
+            if widget is self:
+                return True
+            widget = widget.parentWidget()
+        return False
+
+    def _focus_within_self(self) -> bool:
+        focus_widget = QApplication.focusWidget()
+        if not isinstance(focus_widget, QWidget):
+            return False
+        return self._object_is_within_self(focus_widget)
+
+    def _clear_focus_from_inputs(self) -> None:
+        focus_widget = QApplication.focusWidget()
+        if not isinstance(focus_widget, QWidget):
+            return
+        if not self._object_is_within_self(focus_widget):
+            return
+        focus_widget.clearFocus()
 
 
 __all__ = [
