@@ -160,6 +160,7 @@ class CalendarDayView(QWidget):
                 and end_julian is not None
                 and start_julian < day_julian < end_julian
             )
+            is_today = day_date.toJulianDay() == today.toJulianDay()
             cell.set_day(
                 day_date,
                 in_current_month=in_current_month,
@@ -168,6 +169,7 @@ class CalendarDayView(QWidget):
                 is_range_start=is_range_start,
                 is_range_end=is_range_end,
                 is_in_range=is_in_range,
+                is_today=is_today,
             )
 
     def _weekday_names(self) -> Iterable[str]:

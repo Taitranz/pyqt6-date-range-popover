@@ -166,6 +166,8 @@ class LayoutConfig:
     calendar_day_cell_size: int = 34
     calendar_day_cell_radius: int = 8
     calendar_day_underline_height: int = 2
+    calendar_day_underline_offset: int = 6
+    calendar_day_underline_width: int = 20
 
 
 @dataclass(frozen=True, slots=True)
