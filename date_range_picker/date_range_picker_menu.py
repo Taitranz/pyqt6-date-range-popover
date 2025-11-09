@@ -3,7 +3,16 @@ from __future__ import annotations
 from typing import Callable, Protocol, cast
 
 from PyQt6.QtCore import QSize, Qt
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QSizePolicy, QVBoxLayout, QWidget
+from PyQt6.QtGui import QMouseEvent
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .animation.slide_animator import SlideAnimator
 from .components.button_strip import ButtonStrip
@@ -17,10 +26,28 @@ class _ZeroArgSignal(Protocol):
     def connect(self, slot: Callable[[], None]) -> object: ...
 
 
+def _clear_current_focus(widget: QWidget) -> None:
+    focus_widget = QApplication.focusWidget()
+    if focus_widget is not None and focus_widget is not widget:
+        focus_widget.clearFocus()
+
+
+class _ClickableContainer(QWidget):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
+
+    def mousePressEvent(self, a0: QMouseEvent | None) -> None:
+        _clear_current_focus(self)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
+        super().mousePressEvent(a0)
+
+
 class DateRangePickerMenu(QWidget):
     def __init__(self) -> None:
         super().__init__()
 
+        self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
         self._current_position = 0
         self._current_width = constants.DATE_INDICATOR_WIDTH
 
@@ -34,7 +61,7 @@ class DateRangePickerMenu(QWidget):
         self._button_strip = ButtonStrip(self)
         self._sliding_track = SlidingTrackIndicator(self)
 
-        button_container = QWidget(self)
+        button_container = _ClickableContainer(self)
         button_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         button_container.setStyleSheet(
             f"background-color: {constants.BUTTON_CONTAINER_BACKGROUND}; border-radius: 0px;"
@@ -72,6 +99,11 @@ class DateRangePickerMenu(QWidget):
 
     def sizeHint(self) -> QSize:  # noqa: D401
         return QSize(320, constants.WINDOW_MIN_HEIGHT)
+
+    def mousePressEvent(self, a0: QMouseEvent | None) -> None:
+        _clear_current_focus(self)
+        self.setFocus(Qt.FocusReason.MouseFocusReason)
+        super().mousePressEvent(a0)
 
     def _setup_window(self) -> None:
         self.setMinimumSize(constants.WINDOW_MIN_WIDTH, constants.WINDOW_MIN_HEIGHT)
