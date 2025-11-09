@@ -5,7 +5,13 @@ from typing import Final, Literal
 
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QMouseEvent
-from PyQt6.QtWidgets import QApplication, QLineEdit, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLineEdit,
+    QVBoxLayout,
+    QWidget,
+)
 
 from .input_with_icon import InputWithIcon
 
@@ -14,6 +20,9 @@ GO_TO_DATE: Final[ModeLiteral] = "go_to_date"
 CUSTOM_DATE_RANGE: Final[ModeLiteral] = "custom_date_range"
 CALENDAR_ICON_PATH: Final[Path] = (
     Path(__file__).resolve().parent.parent / "assets" / "calender.svg"
+)
+CLOCK_ICON_PATH: Final[Path] = (
+    Path(__file__).resolve().parent.parent / "assets" / "clock.svg"
 )
 
 
@@ -80,26 +89,70 @@ class DateTimeRangeSelector(QWidget):
 
         if self._mode == GO_TO_DATE:
             self._layout.setSpacing(0)
-            input_with_icon = self._create_input(self, text="component 2")
-            self._layout.addWidget(input_with_icon)
+            row_layout = QHBoxLayout()
+            row_layout.setContentsMargins(0, 0, 0, 0)
+            row_layout.setSpacing(8)
+
+            date_input = self._create_input(self, text="2025-11-04")
+            time_input = self._create_input(
+                self,
+                text="00:00",
+                width=100,
+                icon_path=str(CLOCK_ICON_PATH),
+            )
+
+            row_layout.addWidget(date_input)
+            row_layout.addStretch()
+            row_layout.addWidget(time_input)
+            row_layout.setAlignment(time_input, Qt.AlignmentFlag.AlignRight)
+            self._layout.addLayout(row_layout)
             return
 
         if self._mode == CUSTOM_DATE_RANGE:
             self._layout.setSpacing(16)
-            for index in range(2):
-                input_with_icon = self._create_input(
+            for _ in range(2):
+                row_layout = QHBoxLayout()
+                row_layout.setContentsMargins(0, 0, 0, 0)
+                row_layout.setSpacing(8)
+
+                date_input = self._create_input(
                     self,
-                    text=f"Date container {index + 1}",
+                    text="2025-11-04",
                 )
-                self._layout.addWidget(input_with_icon)
+                time_input = self._create_input(
+                    self,
+                    text="00:00",
+                    width=100,
+                    icon_path=str(CLOCK_ICON_PATH),
+                )
+                row_layout.addWidget(date_input)
+                row_layout.addStretch()
+                row_layout.addWidget(time_input)
+                row_layout.setAlignment(time_input, Qt.AlignmentFlag.AlignRight)
+                self._layout.addLayout(row_layout)
             self._layout.addStretch()
 
-    def _create_input(self, parent: QWidget, *, text: str) -> InputWithIcon:
-        input_with_icon = InputWithIcon(
-            parent,
-            text=text,
-            icon_path=str(CALENDAR_ICON_PATH),
-        )
+    def _create_input(
+        self,
+        parent: QWidget,
+        *,
+        text: str,
+        width: int | None = None,
+        icon_path: str | None = None,
+    ) -> InputWithIcon:
+        if width is None:
+            input_with_icon = InputWithIcon(
+                parent,
+                text=text,
+                icon_path=icon_path or str(CALENDAR_ICON_PATH),
+            )
+        else:
+            input_with_icon = InputWithIcon(
+                parent,
+                text=text,
+                width=width,
+                icon_path=icon_path or str(CALENDAR_ICON_PATH),
+            )
         input_with_icon.installEventFilter(self)
         input_with_icon.input.installEventFilter(self)
         return input_with_icon

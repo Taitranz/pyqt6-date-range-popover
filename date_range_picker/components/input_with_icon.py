@@ -11,7 +11,7 @@ DEFAULT_HEIGHT: Final[int] = 34
 DEFAULT_WIDTH: Final[int] = 150
 DEFAULT_ICON_PLACEHOLDER_WIDTH: Final[int] = 32
 DEFAULT_ICON_SIZE: Final[int] = 28
-ICON_COLOR: Final[str] = "#dbdbdb"
+ICON_COLOR: Final[str] = "#8c8c8c"
 INPUT_TEXT_COLOR: Final[str] = "#f5f5f5"
 
 
@@ -52,8 +52,12 @@ class InputWithIcon(QWidget):
             color: %s;
             padding-left: 4px;
             padding-right: 8px;
+            letter-spacing: 1px;
+            font-family: "Trebuchet MS";
             QLineEdit::placeholder {
                 color: %s;
+                letter-spacing: 1px;
+                font-family: "Trebuchet MS";
             }
             """
             % (INPUT_TEXT_COLOR, ICON_COLOR),
@@ -117,7 +121,7 @@ class InputWithIcon(QWidget):
             f"""
             background-color: #1f1f1f;
             border: {border_style};
-            border-radius: 8px;
+            border-radius: 6px;
             """,
         )
 
