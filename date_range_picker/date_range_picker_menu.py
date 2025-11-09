@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
 
 from .animation.slide_animator import SlideAnimator
 from .components.button_strip import ButtonStrip
+from .components.calendar_widget import CalendarWidget
 from .components.date_time_range_selector import (
     CUSTOM_DATE_RANGE,
     GO_TO_DATE,
@@ -106,6 +107,11 @@ class DateRangePickerMenu(QWidget):
 
         self._date_time_selector = DateTimeRangeSelector(self, mode=GO_TO_DATE)
         button_container_layout.addWidget(self._date_time_selector)
+
+        self._calendar_widget = CalendarWidget(self)
+        button_container_layout.addWidget(
+            self._calendar_widget, alignment=Qt.AlignmentFlag.AlignCenter
+        )
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(
