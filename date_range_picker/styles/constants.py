@@ -23,11 +23,13 @@ CALENDAR_TODAY_UNDERLINE_COLOR = "#1f1f1f"
 CALENDAR_DAY_HOVER_BACKGROUND = "#343434"
 CALENDAR_DAY_HOVER_TEXT_COLOR = "#f5f5f5"
 CALENDAR_NAV_ICON_COLOR = "#dbdbdb"
+CALENDAR_DAY_LABEL_BACKGROUND = "#2e2e2e"
+CALENDAR_MODE_LABEL_BACKGROUND = "#2e2e2e"
 
 
 # Dimensions & spacing
 WINDOW_MIN_WIDTH = 302
-WINDOW_MIN_HEIGHT = 780
+WINDOW_MIN_HEIGHT = 580
 WINDOW_RADIUS = 8
 
 MAIN_PADDING = 20
@@ -45,10 +47,11 @@ SLIDING_INDICATOR_RADIUS = 2
 
 CALENDAR_TOP_MARGIN = 16
 CALENDAR_HEADER_BOTTOM_MARGIN = 12
-CALENDAR_GRID_SPACING = 6
+CALENDAR_GRID_SPACING = 4
 CALENDAR_DAY_LABEL_HEIGHT = 20
-CALENDAR_DAY_CELL_SIZE = 40
+CALENDAR_DAY_CELL_SIZE = 34
 CALENDAR_DAY_CELL_RADIUS = 8
+CALENDAR_DAY_UNDERLINE_HEIGHT = 2
 
 
 # Animation
@@ -58,6 +61,7 @@ ANIMATION_DURATION_MS = 40
 
 # Fonts
 FONT_FAMILY = "Trebuchet MS"
+CALENDAR_DAY_FONT_POINT_SIZE = 12
 
 
 def create_header_font() -> QFont:
@@ -82,7 +86,7 @@ def create_label_font() -> QFont:
 
 
 def create_calendar_header_font() -> QFont:
-    font = QFont(FONT_FAMILY, 14)
+    font = QFont(FONT_FAMILY, 12)
     font.setWeight(QFont.Weight.Bold)
     font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 96)
     return font
@@ -96,7 +100,7 @@ def create_calendar_day_label_font() -> QFont:
 
 
 def create_calendar_day_font() -> QFont:
-    font = QFont(FONT_FAMILY, 12)
+    font = QFont(FONT_FAMILY, CALENDAR_DAY_FONT_POINT_SIZE)
     font.setWeight(QFont.Weight.Bold)
     font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 96)
     return font

@@ -3,11 +3,13 @@ from __future__ import annotations
 import calendar
 from enum import Enum, auto
 from functools import partial
+from pathlib import Path
 from typing import Callable, Iterable, List, Optional, Protocol, cast
 
-from PyQt6.QtCore import QDate, Qt, pyqtSignal
+from PyQt6.QtCore import QByteArray, QDate, Qt, pyqtSignal
+from PyQt6.QtGui import QIcon, QPainter, QPixmap, QResizeEvent
+from PyQt6.QtSvg import QSvgRenderer
 from PyQt6.QtWidgets import (
-    QFrame,
     QGridLayout,
     QHBoxLayout,
     QLabel,
@@ -19,6 +21,29 @@ from PyQt6.QtWidgets import (
 )
 
 from ..styles import constants
+
+
+NAV_LEFT_ICON_PATH: Path = Path(__file__).resolve().parent.parent / "assets" / "carrot_left.svg"
+NAV_RIGHT_ICON_PATH: Path = Path(__file__).resolve().parent.parent / "assets" / "carrot_right.svg"
+
+
+def _create_nav_icon(icon_path: Path, size: int, color: str) -> QIcon:
+    """Create a colored SVG icon from a file path."""
+    try:
+        svg_text = icon_path.read_text(encoding="utf-8")
+    except OSError:
+        return QIcon()
+    colored_svg = svg_text.replace("currentColor", color)
+    renderer = QSvgRenderer(QByteArray(colored_svg.encode("utf-8")))
+    if not renderer.isValid():
+        return QIcon()
+    pixmap = QPixmap(size, size)
+    pixmap.fill(Qt.GlobalColor.transparent)
+    painter = QPainter(pixmap)
+    renderer.render(painter)
+    painter.end()
+    icon = QIcon(pixmap)
+    return icon
 
 
 class _VoidSignal(Protocol):
@@ -44,10 +69,6 @@ class _CalendarDayCell(QWidget):
         super().__init__(parent)
         self._date = QDate()
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(4)
-
         self._button = QPushButton(self)
         self._button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self._button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -58,15 +79,11 @@ class _CalendarDayCell(QWidget):
         click_signal = cast(_VoidSignal, self._button.clicked)
         click_signal.connect(self._on_clicked)
 
-        self._underline = QFrame(self)
-        self._underline.setFixedHeight(2)
-        self._underline.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        layout.addWidget(self._button, alignment=Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(self._underline)
-
-        self.setFixedWidth(constants.CALENDAR_DAY_CELL_SIZE)
+        self.setFixedSize(
+            constants.CALENDAR_DAY_CELL_SIZE, constants.CALENDAR_DAY_CELL_SIZE
+        )
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self._position_elements()
 
     def set_day(self, date: QDate, *, in_current_month: bool, is_today: bool) -> None:
         self._date = date
@@ -82,16 +99,10 @@ class _CalendarDayCell(QWidget):
             hover_background = constants.CALENDAR_TODAY_BACKGROUND
             hover_text = constants.CALENDAR_TODAY_TEXT_COLOR
             text_color = constants.CALENDAR_TODAY_TEXT_COLOR
-            self._underline.setStyleSheet(
-                f"background-color: {constants.CALENDAR_TODAY_UNDERLINE_COLOR}; border: none;"
-            )
-            self._underline.setVisible(True)
         else:
             background = "transparent"
             hover_background = constants.CALENDAR_DAY_HOVER_BACKGROUND
             hover_text = constants.CALENDAR_DAY_HOVER_TEXT_COLOR
-            self._underline.setStyleSheet("background-color: transparent; border: none;")
-            self._underline.setVisible(False)
 
         self._button.setStyleSheet(
             "QPushButton {"
@@ -111,6 +122,15 @@ class _CalendarDayCell(QWidget):
         if self._date.isValid():
             self.clicked.emit(self._date)
 
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:
+        super().resizeEvent(a0)
+        self._position_elements()
+
+    def _position_elements(self) -> None:
+        size = constants.CALENDAR_DAY_CELL_SIZE
+        self._button.move(0, 0)
+        self._button.resize(size, size)
+
 
 class CalendarWidget(QWidget):
     """Standalone calendar component mirroring the visual design reference."""
@@ -118,7 +138,7 @@ class CalendarWidget(QWidget):
     date_selected = pyqtSignal(QDate)
 
     _DAY_ORDER: List[int] = [1, 2, 3, 4, 5, 6, 7]  # Monday -> Sunday
-    _MONTH_GRID_COLUMNS = 4
+    _MONTH_GRID_COLUMNS = 3
     _YEAR_GRID_COLUMNS = 4
     _YEAR_RANGE_SIZE = 20
     _MAX_YEAR = 9999
@@ -169,14 +189,33 @@ class CalendarWidget(QWidget):
 
         main_layout.addLayout(header_layout)
 
-        self._mode_label = QLabel(self)
+        self._mode_label_container = QWidget(self)
+        self._mode_label_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        self._mode_label_container.setStyleSheet(
+            f"background-color: {constants.CALENDAR_MODE_LABEL_BACKGROUND};"
+            " border-radius: 4px;"
+            " border: none;"
+        )
+        self._mode_label_container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self._mode_label_container.setFixedWidth(262)
+
+        mode_label_layout = QHBoxLayout(self._mode_label_container)
+        mode_label_layout.setContentsMargins(0, 0, 0, 0)
+        mode_label_layout.setSpacing(constants.CALENDAR_GRID_SPACING)
+
+        self._mode_label = QLabel()
         self._mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._mode_label.setFont(constants.create_calendar_day_label_font())
         self._mode_label.setStyleSheet(
-            f"color: {constants.CALENDAR_MUTED_DAY_TEXT_COLOR}; border: none;"
+            f"color: {constants.CALENDAR_MUTED_DAY_TEXT_COLOR};"
+            " background-color: transparent;"
+            " border: none;"
         )
-        self._mode_label.setVisible(False)
-        main_layout.addWidget(self._mode_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self._mode_label.setFixedHeight(constants.CALENDAR_DAY_LABEL_HEIGHT)
+        mode_label_layout.addWidget(self._mode_label)
+
+        self._mode_label_container.setVisible(False)
+        main_layout.addWidget(self._mode_label_container, alignment=Qt.AlignmentFlag.AlignCenter)
 
         self._content_stack = QStackedWidget(self)
         self._content_stack.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -196,23 +235,34 @@ class CalendarWidget(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(constants.CALENDAR_GRID_SPACING)
 
-        day_label_layout = QHBoxLayout()
+        day_label_container = QWidget(container)
+        day_label_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        day_label_container.setStyleSheet(
+            f"background-color: {constants.CALENDAR_DAY_LABEL_BACKGROUND};"
+            " border-radius: 4px;"
+            " border: none;"
+        )
+        day_label_container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+
+        day_label_layout = QHBoxLayout(day_label_container)
         day_label_layout.setContentsMargins(0, 0, 0, 0)
         day_label_layout.setSpacing(constants.CALENDAR_GRID_SPACING)
 
         for day_name in self._weekday_labels():
-            label = QLabel(day_name, container)
+            label = QLabel(day_name)
             label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             label.setFont(constants.create_calendar_day_label_font())
             label.setFixedWidth(constants.CALENDAR_DAY_CELL_SIZE)
             label.setFixedHeight(constants.CALENDAR_DAY_LABEL_HEIGHT)
             label.setStyleSheet(
-                f"color: {constants.CALENDAR_MUTED_DAY_TEXT_COLOR}; border: none;"
+                f"color: {constants.CALENDAR_MUTED_DAY_TEXT_COLOR};"
+                " background-color: transparent;"
+                " border: none;"
             )
             label.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
             day_label_layout.addWidget(label)
 
-        layout.addLayout(day_label_layout)
+        layout.addWidget(day_label_container, alignment=Qt.AlignmentFlag.AlignCenter)
 
         grid_container = QWidget(container)
         grid_container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -237,21 +287,29 @@ class CalendarWidget(QWidget):
 
     def _build_month_view(self) -> QWidget:
         container = QWidget(self)
+        container.setFixedSize(262, 236)
+        container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        container.setStyleSheet("background-color: #1f1f1f;")
+        
         layout = QGridLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setHorizontalSpacing(constants.CALENDAR_GRID_SPACING)
-        layout.setVerticalSpacing(constants.CALENDAR_GRID_SPACING)
+        layout.setVerticalSpacing(32)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._month_buttons.clear()
         for index in range(1, 13):
             month_name = calendar.month_abbr[index]
             button = self._create_option_button(month_name, container)
+            button.setFixedWidth(86)
             month_signal = cast(_VoidSignal, button.clicked)
             month_signal.connect(partial(self._on_month_clicked, index))
             row = (index - 1) // self._MONTH_GRID_COLUMNS
             column = (index - 1) % self._MONTH_GRID_COLUMNS
             layout.addWidget(button, row, column)
+            layout.setColumnStretch(column, 1)
+            layout.setRowStretch(row, 1)
             self._month_buttons.append(button)
 
         return container
@@ -261,12 +319,13 @@ class CalendarWidget(QWidget):
         layout = QGridLayout(container)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setHorizontalSpacing(constants.CALENDAR_GRID_SPACING)
-        layout.setVerticalSpacing(constants.CALENDAR_GRID_SPACING)
+        layout.setVerticalSpacing(14)
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         self._year_buttons.clear()
         for index in range(self._YEAR_RANGE_SIZE):
             button = self._create_option_button("", container)
+            button.setFixedWidth(64)
             year_signal = cast(_VoidSignal, button.clicked)
             year_signal.connect(partial(self._on_year_button_clicked, button))
             row = index // self._YEAR_GRID_COLUMNS
@@ -287,8 +346,11 @@ class CalendarWidget(QWidget):
             "background-color: transparent;"
             f"color: {constants.CALENDAR_HEADER_TEXT_COLOR};"
             "border: none;"
+            "padding: 4px 11px 4px 11px;"
+            "border-radius: 4px;"
             "}"
             "QPushButton:hover {"
+            "background-color: #2e2e2e;"
             f"color: {constants.CALENDAR_DAY_HOVER_TEXT_COLOR};"
             "}"
         )
@@ -328,19 +390,28 @@ class CalendarWidget(QWidget):
         )
 
     def _create_nav_button(self, text: str) -> QPushButton:
-        button = QPushButton(text, self)
+        button = QPushButton(self)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         button.setFixedSize(32, 32)
-        button.setFont(constants.create_calendar_day_font())
         button.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        # Load SVG icon based on button text
+        if text == "<":
+            icon_path = NAV_LEFT_ICON_PATH
+        else:  # text == ">"
+            icon_path = NAV_RIGHT_ICON_PATH
+        
+        icon = _create_nav_icon(icon_path, 32, constants.CALENDAR_NAV_ICON_COLOR)
+        button.setIcon(icon)
+        button.setIconSize(icon.actualSize(button.size()))
+        
         button.setStyleSheet(
             "QPushButton {"
             "background-color: transparent;"
-            f"color: {constants.CALENDAR_NAV_ICON_COLOR};"
             "border: none;"
             "}"
             "QPushButton:hover {"
-            f"color: {constants.CALENDAR_DAY_HOVER_TEXT_COLOR};"
+            "background-color: #343434;"
             "}"
         )
         return button
@@ -387,17 +458,17 @@ class CalendarWidget(QWidget):
         self._view_mode = view
 
         if view is _CalendarViewMode.DAY:
-            self._mode_label.setVisible(False)
+            self._mode_label_container.setVisible(False)
             self._content_stack.setCurrentWidget(self._day_view)
             self._populate_days()
         elif view is _CalendarViewMode.MONTH:
             self._mode_label.setText("Months")
-            self._mode_label.setVisible(True)
+            self._mode_label_container.setVisible(True)
             self._content_stack.setCurrentWidget(self._month_view)
             self._update_month_buttons()
         else:
             self._mode_label.setText("Years")
-            self._mode_label.setVisible(True)
+            self._mode_label_container.setVisible(True)
             self._content_stack.setCurrentWidget(self._year_view)
             self._ensure_year_range_contains(self._visible_month.year())
             self._update_year_buttons()
