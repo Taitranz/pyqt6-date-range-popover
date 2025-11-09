@@ -639,4 +639,16 @@ class CalendarWidget(QWidget):
         self._populate_days()  # Repopulate to update the highlight
         self.date_selected.emit(date)
 
+    def set_selected_date(self, date: QDate) -> None:
+        """Update the calendar to display and highlight the provided date."""
+        if not date.isValid():
+            return
+        if date.year() < 1 or date.year() > self._MAX_YEAR:
+            return
+        self._selected_date = date
+        self._visible_month = QDate(date.year(), date.month(), 1)
+        self._ensure_year_range_contains(date.year())
+        self._switch_view(_CalendarViewMode.DAY)
+        self._update_nav_buttons_state()
+
 

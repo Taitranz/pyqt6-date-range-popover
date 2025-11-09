@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final, Literal
+from typing import Callable, Final, Literal, Protocol, cast
 
-from PyQt6.QtCore import QDate, QEvent, QObject, Qt
+from PyQt6.QtCore import QDate, QEvent, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import (
     QApplication,
@@ -26,7 +26,13 @@ CLOCK_ICON_PATH: Final[Path] = (
 )
 
 
+class _StrSignal(Protocol):
+    def connect(self, slot: Callable[[str], None]) -> object: ...
+
+
 class DateTimeRangeSelector(QWidget):
+    date_input_valid = pyqtSignal(QDate)
+
     def __init__(
         self,
         parent: QWidget | None = None,
@@ -47,6 +53,7 @@ class DateTimeRangeSelector(QWidget):
         self._go_to_date_input: InputWithIcon | None = None
         self._date_inputs: list[InputWithIcon] = []
         self._last_focused_date_input: InputWithIcon | None = None
+        self._date_input_handlers: dict[InputWithIcon, Callable[[str], None]] = {}
 
         self._build_ui()
 
@@ -104,6 +111,7 @@ class DateTimeRangeSelector(QWidget):
         self._last_focused_date_input = None
         self._date_inputs = []
         self._go_to_date_input = None
+        self._date_input_handlers = {}
         while self._layout.count():
             item = self._layout.takeAt(0)
             if item is None:
@@ -196,4 +204,29 @@ class DateTimeRangeSelector(QWidget):
         input_with_icon.input.installEventFilter(self)
         if is_date:
             self._date_inputs.append(input_with_icon)
+            handler = self._make_date_input_handler(input_with_icon)
+            self._date_input_handlers[input_with_icon] = handler
+            text_signal = cast(_StrSignal, input_with_icon.input.textChanged)
+            text_signal.connect(handler)
+
+    def _on_date_input_text_changed(self, target: InputWithIcon, text: str) -> None:
+        if target not in self._date_inputs:
+            return
+        stripped = text.strip()
+        if len(stripped) != 10:
+            return
+        parsed = QDate.fromString(stripped, "yyyy-MM-dd")
+        if not parsed.isValid():
+            return
+        normalized = parsed.toString("yyyy-MM-dd")
+        if normalized != stripped:
+            return
+        self._last_focused_date_input = target
+        self.date_input_valid.emit(parsed)
+
+    def _make_date_input_handler(self, target: InputWithIcon) -> Callable[[str], None]:
+        def handler(text: str) -> None:
+            self._on_date_input_text_changed(target, text)
+
+        return handler
 

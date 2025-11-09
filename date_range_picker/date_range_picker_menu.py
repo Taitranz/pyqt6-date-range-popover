@@ -244,6 +244,8 @@ class DateRangePickerMenu(QWidget):
         # Connect calendar date selection to update the input in go_to_date mode
         calendar_date_signal = cast(_DateSignal, self._calendar_widget.date_selected)
         calendar_date_signal.connect(self._on_calendar_date_selected)
+        selector_date_signal = cast(_DateSignal, self._date_time_selector.date_input_valid)
+        selector_date_signal.connect(self._on_date_input_valid)
 
     def _on_date_selected(self) -> None:
         self._button_strip.set_selected_button("date")
@@ -259,6 +261,10 @@ class DateRangePickerMenu(QWidget):
     def _on_calendar_date_selected(self, date: QDate) -> None:
         """Update the go_to_date input when a date is selected from the calendar."""
         self._date_time_selector.apply_calendar_selection(date)
+
+    def _on_date_input_valid(self, date: QDate) -> None:
+        """Update the calendar when a valid date is typed into an input field."""
+        self._calendar_widget.set_selected_date(date)
 
     def _animate_to(self, *, position: int, width: int) -> None:
         current_position = self._sliding_track.current_position
