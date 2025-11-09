@@ -4,6 +4,7 @@ from pathlib import Path
 from typing import Final
 
 from PyQt6.QtCore import QEvent, QObject, Qt
+from PyQt6.QtGui import QEnterEvent
 from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QWidget
 
@@ -13,6 +14,7 @@ DEFAULT_ICON_PLACEHOLDER_WIDTH: Final[int] = 32
 DEFAULT_ICON_SIZE: Final[int] = 28
 ICON_COLOR: Final[str] = "#8c8c8c"
 INPUT_TEXT_COLOR: Final[str] = "#f5f5f5"
+SVG_COLOR_PLACEHOLDER: Final[str] = "__ICON_COLOR__"
 
 
 class InputWithIcon(QWidget):
@@ -35,6 +37,9 @@ class InputWithIcon(QWidget):
         root_layout.setSpacing(4)
 
         self._was_previously_focused = False
+        self._is_hovered = False
+        self._icon_path = icon_path
+        self._icon_svg_template: str | None = None
 
         self.input = QLineEdit(self)
         self.input.setText(text)
@@ -84,13 +89,26 @@ class InputWithIcon(QWidget):
         icon_layout.setSpacing(0)
         icon_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        icon_widget = self._build_icon_widget(icon_path)
-        icon_layout.addWidget(icon_widget)
+        self._icon_widget = self._build_icon_widget(icon_path)
+        icon_layout.addWidget(self._icon_widget)
 
         root_layout.addWidget(self.icon_placeholder)
         root_layout.setAlignment(self.icon_placeholder, Qt.AlignmentFlag.AlignVCenter)
         root_layout.setStretchFactor(self.input, 1)
         self._update_border_style()
+        self._update_icon_color()
+
+    def enterEvent(self, event: QEnterEvent | None) -> None:
+        self._is_hovered = True
+        self._update_border_style()
+        self._update_icon_color()
+        super().enterEvent(event)
+
+    def leaveEvent(self, a0: QEvent | None) -> None:
+        self._is_hovered = False
+        self._update_border_style()
+        self._update_icon_color()
+        super().leaveEvent(a0)
 
     def eventFilter(self, a0: QObject | None, a1: QEvent | None) -> bool:
         if a0 is self.input and a1 is not None and a1.type() in {
@@ -102,6 +120,7 @@ class InputWithIcon(QWidget):
             elif a1.type() is QEvent.Type.FocusOut:
                 self._was_previously_focused = True
             self._update_border_style()
+            self._update_icon_color()
         return super().eventFilter(a0, a1)
 
     def clear_previously_focused(self) -> None:
@@ -113,6 +132,8 @@ class InputWithIcon(QWidget):
     def _update_border_style(self) -> None:
         if self.input.hasFocus():
             border_style = "2px solid #2962ff"
+        elif self._is_hovered:
+            border_style = "1px solid #707070"
         elif self._was_previously_focused:
             border_style = "2px solid #575757"
         else:
@@ -124,8 +145,23 @@ class InputWithIcon(QWidget):
             border-radius: 6px;
             """,
         )
+        self._update_icon_color()
+
+    def _update_icon_color(self) -> None:
+        icon_color = "#dbdbdb" if self._is_hovered else ICON_COLOR
+        if isinstance(self._icon_widget, QLabel):
+            self._icon_widget.setStyleSheet(
+                f"""
+                color: {icon_color};
+                font-size: 12px;
+                font-weight: 600;
+                """
+            )
+        elif isinstance(self._icon_widget, QSvgWidget):
+            self._load_svg_with_color(icon_color)
 
     def _build_icon_widget(self, icon_path: str | None) -> QWidget:
+        self._icon_svg_template = None
         if icon_path is None:
             return self._create_letter_placeholder()
         svg_widget = self._create_svg_widget(icon_path)
@@ -168,8 +204,29 @@ class InputWithIcon(QWidget):
             svg_text = svg_data.decode("utf-8")
         except UnicodeDecodeError:
             svg_text = svg_data.decode("utf-8", errors="ignore")
-        if "currentColor" in svg_text:
-            svg_text = svg_text.replace("currentColor", ICON_COLOR)
-        svg_widget.load(svg_text.encode("utf-8"))
+        self._icon_svg_template = svg_text.replace("currentColor", SVG_COLOR_PLACEHOLDER).replace(
+            ICON_COLOR, SVG_COLOR_PLACEHOLDER
+        )
+        self._load_svg_with_color(ICON_COLOR, svg_widget)
         return svg_widget
+
+    def _load_svg_with_color(
+        self,
+        color: str,
+        widget: QSvgWidget | None = None,
+    ) -> None:
+        svg_widget = widget or (
+            self._icon_widget if isinstance(self._icon_widget, QSvgWidget) else None
+        )
+        if svg_widget is None:
+            return
+        if self._icon_svg_template is not None:
+            svg_text = self._icon_svg_template.replace(SVG_COLOR_PLACEHOLDER, color)
+            svg_widget.load(svg_text.encode("utf-8"))
+        svg_widget.setStyleSheet(
+            f"""
+            background-color: transparent;
+            color: {color};
+            """
+        )
 

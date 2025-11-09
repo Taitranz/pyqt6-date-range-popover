@@ -18,7 +18,11 @@ from PyQt6.QtWidgets import (
 
 from .animation.slide_animator import SlideAnimator
 from .components.button_strip import ButtonStrip
-from .components.date_time_range_selector import CUSTOM_DATE_RANGE, DateTimeRangeSelector
+from .components.date_time_range_selector import (
+    CUSTOM_DATE_RANGE,
+    GO_TO_DATE,
+    DateTimeRangeSelector,
+)
 from .components.draggable_header import DraggableHeaderStrip
 from .components.sliding_track import SlidingTrackIndicator
 from .styles import constants
@@ -83,6 +87,7 @@ class DateRangePickerMenu(QWidget):
 
         self._button_strip = ButtonStrip(self)
         self._sliding_track = SlidingTrackIndicator(self)
+        self._button_strip.set_selected_button("date")
 
         button_container = _ClickableContainer(self)
         button_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -99,7 +104,7 @@ class DateRangePickerMenu(QWidget):
         spacer.setFixedHeight(16)
         button_container_layout.addWidget(spacer)
 
-        self._date_time_selector = DateTimeRangeSelector(self, mode=CUSTOM_DATE_RANGE)
+        self._date_time_selector = DateTimeRangeSelector(self, mode=GO_TO_DATE)
         button_container_layout.addWidget(self._date_time_selector)
 
         main_layout = QVBoxLayout(self)
@@ -168,9 +173,13 @@ class DateRangePickerMenu(QWidget):
         custom_signal.connect(self._on_custom_range_selected)
 
     def _on_date_selected(self) -> None:
+        self._button_strip.set_selected_button("date")
+        self._date_time_selector.set_mode(GO_TO_DATE)
         self._animate_to(position=0, width=constants.DATE_INDICATOR_WIDTH)
 
     def _on_custom_range_selected(self) -> None:
+        self._button_strip.set_selected_button("custom_range")
+        self._date_time_selector.set_mode(CUSTOM_DATE_RANGE)
         target_position = constants.DATE_BUTTON_WIDTH + constants.BUTTON_GAP
         self._animate_to(position=target_position, width=constants.CUSTOM_RANGE_INDICATOR_WIDTH)
 
