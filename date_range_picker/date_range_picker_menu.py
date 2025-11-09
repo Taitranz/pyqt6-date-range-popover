@@ -258,7 +258,7 @@ class DateRangePickerMenu(QWidget):
 
     def _on_calendar_date_selected(self, date: QDate) -> None:
         """Update the go_to_date input when a date is selected from the calendar."""
-        self._date_time_selector.update_go_to_date(date)
+        self._date_time_selector.apply_calendar_selection(date)
 
     def _animate_to(self, *, position: int, width: int) -> None:
         current_position = self._sliding_track.current_position

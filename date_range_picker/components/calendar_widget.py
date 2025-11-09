@@ -354,19 +354,21 @@ class CalendarWidget(QWidget):
         button = QPushButton(self)
         button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         button.setFlat(True)
-        button.setFont(constants.create_calendar_header_font())
+        font = constants.create_calendar_header_font()
+        font.setBold(False)
+        button.setFont(font)
         button.setCursor(Qt.CursorShape.PointingHandCursor)
         button.setStyleSheet(
             "QPushButton {"
             "background-color: transparent;"
-            f"color: {constants.CALENDAR_HEADER_TEXT_COLOR};"
+            "color: #d0d0d0;"
             "border: none;"
             "padding: 4px 11px 4px 11px;"
             "border-radius: 4px;"
             "}"
             "QPushButton:hover {"
             "background-color: #2e2e2e;"
-            f"color: {constants.CALENDAR_DAY_HOVER_TEXT_COLOR};"
+            "color: #ffffff;"
             "}"
         )
         return button

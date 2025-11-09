@@ -230,3 +230,9 @@ class InputWithIcon(QWidget):
             """
         )
 
+    def text(self) -> str:
+        return self.input.text()
+
+    def set_text(self, text: str) -> None:
+        self.input.setText(text)
+
