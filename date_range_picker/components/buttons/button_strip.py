@@ -1,8 +1,6 @@
-"""Button strip that exposes signals for selecting a date range."""
-
 from __future__ import annotations
 
-from typing import Optional
+from typing import Callable, Optional, Protocol, cast
 
 from PyQt6.QtCore import QEvent, QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -12,17 +10,8 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from ..styles.constants import (
-    BUTTON_CONTAINER_BACKGROUND,
-    BUTTON_GAP,
-    BUTTON_STRIP_BOTTOM_MARGIN,
-    BUTTON_DEFAULT_COLOR,
-    BUTTON_HOVER_COLOR,
-    BUTTON_SELECTED_COLOR,
-    CUSTOM_RANGE_BUTTON_WIDTH,
-    DATE_BUTTON_WIDTH,
-)
-from ..styles.constants import create_button_font
+from ...styles import constants
+from ...styles.theme import ColorPalette
 
 
 class ButtonStrip(QWidget):
@@ -37,23 +26,24 @@ class ButtonStrip(QWidget):
         self._selected_button = "date"
         self._hovered_button: Optional[str] = None
 
+        self._palette = ColorPalette()
+
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(f"background-color: {BUTTON_CONTAINER_BACKGROUND};")
 
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, BUTTON_STRIP_BOTTOM_MARGIN)
+        layout.setContentsMargins(0, 0, 0, constants.BUTTON_STRIP_BOTTOM_MARGIN)
         layout.setSpacing(0)
 
         self.date_button = QPushButton("Date", self)
-        self.date_button.setFont(create_button_font())
-        self.date_button.setFixedWidth(DATE_BUTTON_WIDTH)
+        self.date_button.setFont(constants.create_button_font())
+        self.date_button.setFixedWidth(constants.DATE_BUTTON_WIDTH)
         self.date_button.setMinimumHeight(0)
         self.date_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
         self.date_button.installEventFilter(self)
 
         self.custom_range_button = QPushButton("Custom range", self)
-        self.custom_range_button.setFont(create_button_font())
-        self.custom_range_button.setFixedWidth(CUSTOM_RANGE_BUTTON_WIDTH)
+        self.custom_range_button.setFont(constants.create_button_font())
+        self.custom_range_button.setFixedWidth(constants.CUSTOM_RANGE_BUTTON_WIDTH)
         self.custom_range_button.setMinimumHeight(0)
         self.custom_range_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
         self.custom_range_button.installEventFilter(self)
@@ -64,7 +54,7 @@ class ButtonStrip(QWidget):
         )
 
         gap = QWidget(self)
-        gap.setFixedWidth(BUTTON_GAP)
+        gap.setFixedWidth(constants.BUTTON_GAP)
         layout.addWidget(gap)
 
         layout.addWidget(
@@ -73,10 +63,23 @@ class ButtonStrip(QWidget):
         )
         layout.addStretch()
 
-        self.date_button.clicked.connect(self.date_selected.emit)  # type: ignore[attr-defined]
-        self.custom_range_button.clicked.connect(self.custom_range_selected.emit)  # type: ignore[attr-defined]
+        cast(_VoidSignal, self.date_button.clicked).connect(self.date_selected.emit)
+        cast(_VoidSignal, self.custom_range_button.clicked).connect(self.custom_range_selected.emit)
 
-        self._update_button_styles()
+        self.apply_palette(ColorPalette())
+
+    def eventFilter(self, a0: QObject | None, a1: QEvent | None) -> bool:
+        if a0 in {self.date_button, self.custom_range_button} and a1 is not None:
+            target_name = "date" if a0 is self.date_button else "custom_range"
+            if a1.type() == QEvent.Type.Enter:
+                if self._hovered_button != target_name:
+                    self._hovered_button = target_name
+                    self._update_button_styles()
+            elif a1.type() == QEvent.Type.Leave:
+                if self._hovered_button == target_name:
+                    self._hovered_button = None
+                    self._update_button_styles()
+        return super().eventFilter(a0, a1)
 
     def set_selected_button(self, button_name: str) -> None:
         if button_name not in {"date", "custom_range"}:
@@ -86,18 +89,10 @@ class ButtonStrip(QWidget):
         self._selected_button = button_name
         self._update_button_styles()
 
-    def eventFilter(self, obj: Optional[QObject], event: Optional[QEvent]) -> bool:  # type: ignore[override]
-        if obj in {self.date_button, self.custom_range_button} and event is not None:
-            target_name = "date" if obj is self.date_button else "custom_range"
-            if event.type() == QEvent.Type.Enter:
-                if self._hovered_button != target_name:
-                    self._hovered_button = target_name
-                    self._update_button_styles()
-            elif event.type() == QEvent.Type.Leave:
-                if self._hovered_button == target_name:
-                    self._hovered_button = None
-                    self._update_button_styles()
-        return super().eventFilter(obj, event)
+    def apply_palette(self, palette: ColorPalette) -> None:
+        self._palette = palette
+        self.setStyleSheet(f"background-color: {palette.button_container_background};")
+        self._update_button_styles()
 
     def _update_button_styles(self) -> None:
         self._apply_style(self.date_button, "date")
@@ -105,11 +100,11 @@ class ButtonStrip(QWidget):
 
     def _apply_style(self, button: QPushButton, button_name: str) -> None:
         if self._selected_button == button_name:
-            color = BUTTON_SELECTED_COLOR
+            color = self._palette.button_selected_color
         elif self._hovered_button == button_name:
-            color = BUTTON_HOVER_COLOR
+            color = self._palette.button_hover_color
         else:
-            color = BUTTON_DEFAULT_COLOR
+            color = self._palette.button_default_color
         button.setStyleSheet(
             f"""
             text-align: left;
@@ -120,5 +115,12 @@ class ButtonStrip(QWidget):
             color: {color};
             """
         )
+
+
+class _VoidSignal(Protocol):
+    def connect(self, slot: Callable[[], None]) -> object: ...
+
+
+__all__ = ["ButtonStrip"]
 
 

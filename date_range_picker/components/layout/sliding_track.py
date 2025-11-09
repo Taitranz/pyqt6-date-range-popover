@@ -1,5 +1,3 @@
-"""Sliding track widget that hosts the animated indicator."""
-
 from __future__ import annotations
 
 from typing import Optional
@@ -13,24 +11,24 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
-from ..styles.constants import (
-    DEFAULT_TRACK_WIDTH,
-    SLIDING_INDICATOR_HEIGHT,
-    SLIDING_INDICATOR_RADIUS,
-    TRACK_BACKGROUND,
-    TRACK_INDICATOR_COLOR,
-    WINDOW_BACKGROUND,
-)
+from ...styles import constants
+from ...styles.theme import ColorPalette
 
 
 class SlidingTrackIndicator(QWidget):
     """Handles layout of the sliding indicator within its track."""
 
-    def __init__(self, parent: Optional[QWidget] = None) -> None:
+    def __init__(
+        self,
+        parent: Optional[QWidget] = None,
+        *,
+        palette: ColorPalette | None = None,
+    ) -> None:
         super().__init__(parent)
 
+        self._palette = palette or ColorPalette()
+
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet(f"background-color: {WINDOW_BACKGROUND};")
 
         wrapper_layout = QVBoxLayout(self)
         wrapper_layout.setContentsMargins(0, 0, 0, 0)
@@ -38,14 +36,11 @@ class SlidingTrackIndicator(QWidget):
 
         self._track_container = QWidget(self)
         self._track_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self._track_container.setStyleSheet(
-            f"background-color: {TRACK_BACKGROUND}; border-radius: {SLIDING_INDICATOR_RADIUS}px;"
-        )
         self._track_container.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Fixed,
         )
-        self._track_container.setFixedHeight(SLIDING_INDICATOR_HEIGHT)
+        self._track_container.setFixedHeight(constants.SLIDING_INDICATOR_HEIGHT)
 
         track_layout = QHBoxLayout(self._track_container)
         track_layout.setContentsMargins(0, 0, 0, 0)
@@ -57,10 +52,7 @@ class SlidingTrackIndicator(QWidget):
 
         self._indicator = QWidget(self._track_container)
         self._indicator.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self._indicator.setStyleSheet(
-            f"background-color: {TRACK_INDICATOR_COLOR}; border-radius: {SLIDING_INDICATOR_RADIUS}px;"
-        )
-        self._indicator.setFixedHeight(SLIDING_INDICATOR_HEIGHT)
+        self._indicator.setFixedHeight(constants.SLIDING_INDICATOR_HEIGHT)
 
         self._right_spacer = QWidget(self._track_container)
         self._right_spacer.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -74,6 +66,20 @@ class SlidingTrackIndicator(QWidget):
 
         self._current_position = 0
         self._current_width = 0
+
+        self.apply_palette(self._palette)
+
+    def apply_palette(self, palette: ColorPalette) -> None:
+        self._palette = palette
+        self.setStyleSheet(f"background-color: {palette.window_background};")
+        self._track_container.setStyleSheet(
+            f"background-color: {palette.track_background}; "
+            f"border-radius: {constants.SLIDING_INDICATOR_RADIUS}px;"
+        )
+        self._indicator.setStyleSheet(
+            f"background-color: {palette.track_indicator_color}; "
+            f"border-radius: {constants.SLIDING_INDICATOR_RADIUS}px;"
+        )
 
     @property
     def current_position(self) -> int:
@@ -95,7 +101,7 @@ class SlidingTrackIndicator(QWidget):
         self._update_layout()
 
     def _update_layout(self) -> None:
-        track_width = self._track_container.width() or DEFAULT_TRACK_WIDTH
+        track_width = self._track_container.width() or constants.DEFAULT_TRACK_WIDTH
         max_position = max(track_width - self._current_width, 0)
         clamped_position = max(0, min(self._current_position, max_position))
 
@@ -103,5 +109,8 @@ class SlidingTrackIndicator(QWidget):
 
         remaining = max(track_width - clamped_position - self._current_width, 0)
         self._right_spacer.setFixedWidth(remaining)
+
+
+__all__ = ["SlidingTrackIndicator"]
 
 

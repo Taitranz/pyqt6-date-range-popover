@@ -13,16 +13,17 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ...styles.theme import ColorPalette
 from .input_with_icon import InputWithIcon
 
 ModeLiteral = Literal["go_to_date", "custom_date_range"]
 GO_TO_DATE: Final[ModeLiteral] = "go_to_date"
 CUSTOM_DATE_RANGE: Final[ModeLiteral] = "custom_date_range"
 CALENDAR_ICON_PATH: Final[Path] = (
-    Path(__file__).resolve().parent.parent / "assets" / "calender.svg"
+    Path(__file__).resolve().parents[2] / "assets" / "calender.svg"
 )
 CLOCK_ICON_PATH: Final[Path] = (
-    Path(__file__).resolve().parent.parent / "assets" / "clock.svg"
+    Path(__file__).resolve().parents[2] / "assets" / "clock.svg"
 )
 
 
@@ -30,7 +31,9 @@ class _StrSignal(Protocol):
     def connect(self, slot: Callable[[str], None]) -> object: ...
 
 
-class DateTimeRangeSelector(QWidget):
+class DateTimeSelector(QWidget):
+    """Widget hosting date/time inputs with selectable layout."""
+
     date_input_valid = pyqtSignal(QDate)
 
     def __init__(
@@ -38,11 +41,12 @@ class DateTimeRangeSelector(QWidget):
         parent: QWidget | None = None,
         *,
         mode: ModeLiteral = GO_TO_DATE,
+        palette: ColorPalette | None = None,
     ) -> None:
         super().__init__(parent)
 
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setStyleSheet("background-color: #1f1f1f;")
+        self._palette = palette or ColorPalette()
         self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
 
         self._mode: ModeLiteral = mode
@@ -55,9 +59,14 @@ class DateTimeRangeSelector(QWidget):
         self._last_focused_date_input: InputWithIcon | None = None
         self._date_input_handlers: dict[InputWithIcon, Callable[[str], None]] = {}
 
+        self.apply_palette(self._palette)
         self._build_ui()
 
-    def mousePressEvent(self, a0: QMouseEvent | None) -> None:
+    def apply_palette(self, palette: ColorPalette) -> None:
+        self._palette = palette
+        self.setStyleSheet(f"background-color: {palette.window_background};")
+
+    def mousePressEvent(self, a0: QMouseEvent | None) -> None:  # noqa: N802
         focus_widget = QApplication.focusWidget()
         if focus_widget is not None and focus_widget is not self:
             focus_widget.clearFocus()
@@ -72,15 +81,21 @@ class DateTimeRangeSelector(QWidget):
             parent = a0.parentWidget()
             if isinstance(parent, InputWithIcon):
                 target = parent
-        if target is not None and a1 is not None and a1.type() is QEvent.Type.FocusIn:
-            if (
-                self._previously_focused_input is not None
-                and self._previously_focused_input is not target
-            ):
-                self._previously_focused_input.clear_previously_focused()
-            self._previously_focused_input = target
-            if target in self._date_inputs:
-                self._last_focused_date_input = target
+        if target is not None and a1 is not None and a1.type() in {
+            QEvent.Type.FocusIn,
+            QEvent.Type.FocusOut,
+        }:
+            if a1.type() is QEvent.Type.FocusIn:
+                if (
+                    self._previously_focused_input is not None
+                    and self._previously_focused_input is not target
+                ):
+                    self._previously_focused_input.clear_previously_focused()
+                self._previously_focused_input = target
+                if target in self._date_inputs:
+                    self._last_focused_date_input = target
+            elif a1.type() is QEvent.Type.FocusOut:
+                target.clear_previously_focused()
         return super().eventFilter(a0, a1)
 
     def set_mode(self, mode: ModeLiteral) -> None:
@@ -92,19 +107,31 @@ class DateTimeRangeSelector(QWidget):
     def update_go_to_date(self, date: QDate) -> None:
         """Update the date input field in go_to_date mode."""
         if self._go_to_date_input is not None and self._mode == GO_TO_DATE:
-            date_str = date.toString("yyyy-MM-dd")
-            self._go_to_date_input.set_text(date_str)
+            self._go_to_date_input.set_text(date.toString("yyyy-MM-dd"))
 
     def apply_calendar_selection(self, date: QDate) -> None:
         """Apply a calendar-selected date to the most relevant date input."""
-        target = self._last_focused_date_input
-        if target is None:
-            if self._date_inputs:
-                target = self._date_inputs[0]
+        target = self._last_focused_date_input or (self._date_inputs[0] if self._date_inputs else None)
         if target is None:
             return
         target.set_text(date.toString("yyyy-MM-dd"))
         self._last_focused_date_input = target
+
+    def set_range(self, start: QDate, end: QDate) -> None:
+        if self._mode == GO_TO_DATE:
+            self.update_go_to_date(start)
+            return
+        if len(self._date_inputs) >= 2:
+            self._date_inputs[0].set_text(start.toString("yyyy-MM-dd"))
+            self._date_inputs[1].set_text(end.toString("yyyy-MM-dd"))
+
+    def last_focused_date_index(self) -> int | None:
+        if self._last_focused_date_input is None:
+            return None
+        try:
+            return self._date_inputs.index(self._last_focused_date_input)
+        except ValueError:
+            return None
 
     def _build_ui(self) -> None:
         self._previously_focused_input = None
@@ -112,6 +139,7 @@ class DateTimeRangeSelector(QWidget):
         self._date_inputs = []
         self._go_to_date_input = None
         self._date_input_handlers = {}
+
         while self._layout.count():
             item = self._layout.takeAt(0)
             if item is None:
@@ -191,23 +219,18 @@ class DateTimeRangeSelector(QWidget):
                 width=width,
                 icon_path=icon_path or str(CALENDAR_ICON_PATH),
             )
-        self._register_input(input_with_icon, is_date=is_date)
-        return input_with_icon
-
-    def _register_input(
-        self,
-        input_with_icon: InputWithIcon,
-        *,
-        is_date: bool,
-    ) -> None:
         input_with_icon.installEventFilter(self)
         input_with_icon.input.installEventFilter(self)
         if is_date:
-            self._date_inputs.append(input_with_icon)
-            handler = self._make_date_input_handler(input_with_icon)
-            self._date_input_handlers[input_with_icon] = handler
-            text_signal = cast(_StrSignal, input_with_icon.input.textChanged)
-            text_signal.connect(handler)
+            self._register_date_input(input_with_icon)
+        return input_with_icon
+
+    def _register_date_input(self, input_with_icon: InputWithIcon) -> None:
+        self._date_inputs.append(input_with_icon)
+        handler = self._make_date_input_handler(input_with_icon)
+        self._date_input_handlers[input_with_icon] = handler
+        text_signal = cast(_StrSignal, input_with_icon.input.textChanged)
+        text_signal.connect(handler)
 
     def _on_date_input_text_changed(self, target: InputWithIcon, text: str) -> None:
         if target not in self._date_inputs:
@@ -229,4 +252,13 @@ class DateTimeRangeSelector(QWidget):
             self._on_date_input_text_changed(target, text)
 
         return handler
+
+
+__all__ = [
+    "DateTimeSelector",
+    "ModeLiteral",
+    "GO_TO_DATE",
+    "CUSTOM_DATE_RANGE",
+]
+
 
