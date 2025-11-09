@@ -3,7 +3,9 @@ from __future__ import annotations
 from typing import Final, Literal
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QVBoxLayout, QWidget
+
+from .input_with_icon import InputWithIcon
 
 ModeLiteral = Literal["go_to_date", "custom_date_range"]
 GO_TO_DATE: Final[ModeLiteral] = "go_to_date"
@@ -46,37 +48,17 @@ class DateTimeRangeSelector(QWidget):
 
         if self._mode == GO_TO_DATE:
             self._layout.setSpacing(0)
-            label = QLabel("component 2", self)
-            label.setFixedHeight(34)
-            label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            self._layout.addWidget(label)
+            input_with_icon = InputWithIcon(self, text="component 2")
+            self._layout.addWidget(input_with_icon)
             return
 
         if self._mode == CUSTOM_DATE_RANGE:
             self._layout.setSpacing(16)
             for index in range(2):
-                container = self._create_placeholder_container(
-                    f"Date container {index + 1}",
+                input_with_icon = InputWithIcon(
+                    self,
+                    text=f"Date container {index + 1}",
                 )
-                self._layout.addWidget(container)
+                self._layout.addWidget(input_with_icon)
             self._layout.addStretch()
-
-    def _create_placeholder_container(self, text: str) -> QWidget:
-        container = QWidget(self)
-        container.setFixedHeight(34)
-        container.setStyleSheet(
-            "background-color: #f2f2f2; border: 1px solid #8faadc;",
-        )
-
-        container_layout = QVBoxLayout(container)
-        container_layout.setContentsMargins(0, 0, 0, 0)
-        container_layout.setSpacing(0)
-
-        label = QLabel(text, container)
-        label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
-        )
-        container_layout.addWidget(label)
-
-        return container
 
