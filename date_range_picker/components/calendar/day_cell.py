@@ -128,10 +128,12 @@ class CalendarDayCell(QWidget):
             "border: none;"
             f"border-radius: {radius}px;"
             "padding: 0;"
+            "outline: none;"
             "}"
             "QPushButton:hover {"
             f"background-color: {hover_background};"
             f"color: {hover_text};"
+            "outline: none;"
             "}"
         )
 

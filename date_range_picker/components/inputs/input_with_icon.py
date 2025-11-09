@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
-from typing import Final, Optional
+from typing import Callable, Final, Optional, Pattern, Protocol, cast
 
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QEnterEvent
@@ -15,6 +16,8 @@ DEFAULT_HEIGHT: Final[int] = 34
 DEFAULT_WIDTH: Final[int] = 150
 DEFAULT_ICON_PLACEHOLDER_WIDTH: Final[int] = 32
 DEFAULT_ICON_SIZE: Final[int] = 28
+class _StrSignal(Protocol):
+    def connect(self, slot: Callable[[str], None]) -> object: ...
 
 
 class InputWithIcon(QWidget):
@@ -28,6 +31,9 @@ class InputWithIcon(QWidget):
         width: int | None = DEFAULT_WIDTH,
         icon_path: str | Path | None = None,
         style: InputStyleConfig | None = None,
+        max_length: int | None = None,
+        regex_pattern: str | None = None,
+        revert_on_focus_out: bool = True,
     ) -> None:
         super().__init__(parent)
 
@@ -41,6 +47,14 @@ class InputWithIcon(QWidget):
         self._icon_template: Optional[str] = None
         self._is_hovered = False
         self._was_previously_focused = False
+        self._max_length = max_length
+        self._regex_pattern = regex_pattern
+        self._compiled_pattern: Pattern[str] | None = (
+            re.compile(regex_pattern) if regex_pattern is not None else None
+        )
+        self._revert_on_focus_out = revert_on_focus_out
+        self._last_valid_text = text
+        self._is_invalid = False
 
         root_layout = QHBoxLayout(self)
         root_layout.setContentsMargins(2, 2, 2, 2)
@@ -55,6 +69,10 @@ class InputWithIcon(QWidget):
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding,
         )
+        if self._max_length is not None:
+            self.input.setMaxLength(self._max_length)
+        text_signal = cast(_StrSignal, self.input.textChanged)
+        text_signal.connect(self._on_text_changed)
 
         root_layout.addWidget(self.input, stretch=1)
 
@@ -78,6 +96,7 @@ class InputWithIcon(QWidget):
         root_layout.setStretchFactor(self.input, 1)
 
         self.apply_style(self._style)
+        self._initialize_validation_state()
 
     def enterEvent(self, event: QEnterEvent | None) -> None:
         self._is_hovered = True
@@ -98,6 +117,12 @@ class InputWithIcon(QWidget):
                 self._update_border_style()
             elif a1.type() is QEvent.Type.FocusOut:
                 self._was_previously_focused = True
+                if (
+                    self._revert_on_focus_out
+                    and self._is_invalid
+                    and self.text() != self._last_valid_text
+                ):
+                    self.set_text(self._last_valid_text)
                 self._update_border_style()
         return super().eventFilter(a0, a1)
 
@@ -118,6 +143,44 @@ class InputWithIcon(QWidget):
 
     def set_text(self, text: str) -> None:
         self.input.setText(text)
+
+    def _initialize_validation_state(self) -> None:
+        text = self.input.text()
+        if self._max_length is not None and len(text) > self._max_length:
+            trimmed = text[: self._max_length]
+            if trimmed != text:
+                self.input.blockSignals(True)
+                self.input.setText(trimmed)
+                self.input.blockSignals(False)
+                text = trimmed
+        self._update_validation_state(text, allow_last_valid_update=True)
+
+    def _on_text_changed(self, text: str) -> None:
+        if self._max_length is not None and len(text) > self._max_length:
+            trimmed = text[: self._max_length]
+            if trimmed != text:
+                self.input.blockSignals(True)
+                self.input.setText(trimmed)
+                self.input.blockSignals(False)
+                text = trimmed
+        self._update_validation_state(text, allow_last_valid_update=True)
+
+    def _update_validation_state(
+        self,
+        text: str,
+        *,
+        allow_last_valid_update: bool,
+    ) -> None:
+        is_valid = self._is_text_valid(text)
+        if is_valid and allow_last_valid_update:
+            self._last_valid_text = text
+        self._is_invalid = bool(self._compiled_pattern) and not is_valid
+        self._update_border_style()
+
+    def _is_text_valid(self, text: str) -> bool:
+        if self._compiled_pattern is None:
+            return True
+        return bool(self._compiled_pattern.fullmatch(text))
 
     def _build_icon_widget(self, icon_path: Optional[Path]) -> QWidget:
         if icon_path is None:
@@ -156,10 +219,16 @@ class InputWithIcon(QWidget):
             padding-right: 8px;
             letter-spacing: 1px;
             font-family: "Trebuchet MS";
+            outline: none;
+            selection-background-color: #143a87;
+            selection-color: #ffffff;
             QLineEdit::placeholder {{
                 color: {style.placeholder_color};
                 letter-spacing: 1px;
                 font-family: "Trebuchet MS";
+            }}
+            QLineEdit:focus {{
+                outline: none;
             }}
             """
         )
@@ -178,7 +247,6 @@ class InputWithIcon(QWidget):
         else:
             border = style.border_default
             width = style.border_default_width
-
         self.setStyleSheet(
             f"""
             background-color: {style.background};

@@ -36,6 +36,7 @@ class ButtonStrip(QWidget):
 
         self.date_button = QPushButton("Date", self)
         self.date_button.setFont(constants.create_button_font())
+        self.date_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.date_button.setFixedWidth(constants.DATE_BUTTON_WIDTH)
         self.date_button.setMinimumHeight(0)
         self.date_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)
@@ -43,6 +44,7 @@ class ButtonStrip(QWidget):
 
         self.custom_range_button = QPushButton("Custom range", self)
         self.custom_range_button.setFont(constants.create_button_font())
+        self.custom_range_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.custom_range_button.setFixedWidth(constants.CUSTOM_RANGE_BUTTON_WIDTH)
         self.custom_range_button.setMinimumHeight(0)
         self.custom_range_button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Minimum)

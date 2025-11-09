@@ -195,8 +195,9 @@ class DateRangePicker(QWidget):
         close_button.setIcon(load_colored_svg_icon(CLOSE_ICON_PATH, 18, self._style_manager.theme.palette.button_selected_color))
         close_button.setIconSize(icon_size)
         close_button.setFixedSize(30, 30)
+        close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         close_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        close_button.setStyleSheet("border: none; background: transparent;")
+        close_button.setStyleSheet("border: none; background: transparent; outline: none;")
         close_button.setToolTip("Close")
         layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
         self._close_button = close_button

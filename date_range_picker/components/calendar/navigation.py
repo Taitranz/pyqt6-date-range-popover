@@ -82,10 +82,12 @@ class CalendarNavigation(QWidget):
             "border: none;"
             "padding: 4px 11px 4px 11px;"
             "border-radius: 4px;"
+            "outline: none;"
             "}"
             "QPushButton:hover {"
             f"background-color: {style.header_hover_background};"
             f"color: {style.header_hover_text_color};"
+            "outline: none;"
             "}"
         )
         self._update_nav_icons()
@@ -130,9 +132,11 @@ class CalendarNavigation(QWidget):
             "border: none;"
             "padding: 0px;"
             "border-radius: 4px;"
+            "outline: none;"
             "}"
             "QPushButton:hover {"
             f"background-color: {self._style.day_hover_background};"
+            "outline: none;"
             "}"
         )
         button.setText("")

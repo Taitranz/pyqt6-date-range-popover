@@ -216,11 +216,20 @@ class DateTimeSelector(QWidget):
         icon_path: str | None = None,
         is_date: bool,
     ) -> InputWithIcon:
+        max_length = 10 if is_date else 5
+        regex_pattern = (
+            r"^\d{4}-\d{2}-\d{2}$"
+            if is_date
+            else r"^(?:[01]\d|2[0-3]):[0-5]\d$"
+        )
+
         if width is None:
             input_with_icon = InputWithIcon(
                 parent,
                 text=text,
                 icon_path=icon_path or str(CALENDAR_ICON_PATH),
+                max_length=max_length,
+                regex_pattern=regex_pattern,
             )
         else:
             input_with_icon = InputWithIcon(
@@ -228,6 +237,8 @@ class DateTimeSelector(QWidget):
                 text=text,
                 width=width,
                 icon_path=icon_path or str(CALENDAR_ICON_PATH),
+                max_length=max_length,
+                regex_pattern=regex_pattern,
             )
         input_with_icon.installEventFilter(self)
         input_with_icon.input.installEventFilter(self)

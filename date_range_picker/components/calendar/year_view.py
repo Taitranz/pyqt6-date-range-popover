@@ -105,6 +105,7 @@ class CalendarYearView(QWidget):
             "border: none;"
             f"border-radius: {radius}px;"
             "padding: 0;"
+            "outline: none;"
             "}"
         )
 
@@ -117,10 +118,12 @@ class CalendarYearView(QWidget):
             "border: none;"
             f"border-radius: {radius}px;"
             "padding: 0;"
+            "outline: none;"
             "}"
             "QPushButton:hover {"
             f"background-color: {self._style.day_hover_background};"
             f"color: {self._style.day_hover_text_color};"
+            "outline: none;"
             "}"
         )
 

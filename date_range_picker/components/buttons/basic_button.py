@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QPushButton, QSizePolicy, QWidget
 
 from ...styles import constants
@@ -20,8 +21,11 @@ class BasicButton(QPushButton):
         super().__init__(label, parent)
 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self.setFont(constants.create_button_font())
+        font = constants.create_button_font()
+        font.setWeight(QFont.Weight.Normal)
+        self.setFont(font)
 
         if width is None:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)

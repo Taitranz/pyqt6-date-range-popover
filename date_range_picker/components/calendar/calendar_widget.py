@@ -148,6 +148,7 @@ class CalendarWidget(QWidget):
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Fixed,
         )
+        self._mode_label_container.setFixedHeight(self._layout_config.calendar_day_label_height)
         self._mode_label_container.setVisible(False)
         mode_label_layout = QHBoxLayout(self._mode_label_container)
         mode_label_layout.setContentsMargins(0, 0, 0, 0)
@@ -155,6 +156,7 @@ class CalendarWidget(QWidget):
         mode_label_layout.addStretch()
         self._mode_label = QLabel("", self._mode_label_container)
         self._mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._mode_label.setFixedHeight(self._layout_config.calendar_day_label_height)
         mode_label_layout.addWidget(self._mode_label)
         mode_label_layout.addStretch()
         layout.addWidget(self._mode_label_container)
