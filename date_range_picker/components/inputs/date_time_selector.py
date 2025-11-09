@@ -3,10 +3,11 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Callable, Final, Literal, Protocol, cast
 
-from PyQt6.QtCore import QDate, QEvent, QObject, Qt, pyqtSignal
+from PyQt6.QtCore import QDate, QEvent, QObject, Qt, pyqtSignal, QStringListModel
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import (
     QApplication,
+    QCompleter,
     QHBoxLayout,
     QLineEdit,
     QVBoxLayout,
@@ -58,6 +59,8 @@ class DateTimeSelector(QWidget):
         self._date_inputs: list[InputWithIcon] = []
         self._last_focused_date_input: InputWithIcon | None = None
         self._date_input_handlers: dict[InputWithIcon, Callable[[str], None]] = {}
+        self._time_inputs: list[InputWithIcon] = []
+        self._time_model: QStringListModel | None = None
 
         self.apply_palette(self._palette)
         app = QApplication.instance()
@@ -100,6 +103,8 @@ class DateTimeSelector(QWidget):
                 self._previously_focused_input = target
                 if target in self._date_inputs:
                     self._last_focused_date_input = target
+                elif target in self._time_inputs:
+                    self._show_time_popup(target.input)
         return super().eventFilter(a0, a1)
 
     def set_mode(self, mode: ModeLiteral) -> None:
@@ -143,6 +148,7 @@ class DateTimeSelector(QWidget):
         self._date_inputs = []
         self._go_to_date_input = None
         self._date_input_handlers = {}
+        self._time_inputs = []
 
         while self._layout.count():
             item = self._layout.takeAt(0)
@@ -227,6 +233,8 @@ class DateTimeSelector(QWidget):
         input_with_icon.input.installEventFilter(self)
         if is_date:
             self._register_date_input(input_with_icon)
+        else:
+            self._register_time_input(input_with_icon)
         return input_with_icon
 
     def _register_date_input(self, input_with_icon: InputWithIcon) -> None:
@@ -235,6 +243,58 @@ class DateTimeSelector(QWidget):
         self._date_input_handlers[input_with_icon] = handler
         text_signal = cast(_StrSignal, input_with_icon.input.textChanged)
         text_signal.connect(handler)
+
+    def _register_time_input(self, input_with_icon: InputWithIcon) -> None:
+        self._time_inputs.append(input_with_icon)
+        self._attach_time_completer(input_with_icon.input)
+
+    def _attach_time_completer(self, line_edit: QLineEdit) -> None:
+        if self._time_model is None:
+            self._time_model = QStringListModel(
+                self._generate_time_options(15),
+                self,
+            )
+        completer = QCompleter(self._time_model, self)
+        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
+        completer.setMaxVisibleItems(7)
+        popup = completer.popup()
+        if popup is not None:
+            popup.setStyleSheet("QListView { width: 100px; margin: 0px; padding: 0px; } QListView::item { height: 32px; margin: 0px; padding-left: 8px; padding-right: 8px; } QScrollBar:vertical { width: 0px; } QScrollBar:horizontal { height: 0px; }")
+            popup.setFixedWidth(100)
+            popup.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+            popup.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        line_edit.setCompleter(completer)
+
+    def _generate_time_options(self, step_minutes: int) -> list[str]:
+        return [
+            f"{hour:02d}:{minute:02d}"
+            for hour in range(24)
+            for minute in range(0, 60, step_minutes)
+        ]
+
+    def _show_time_popup(self, line_edit: QLineEdit) -> None:
+        completer = line_edit.completer()
+        if completer is None:
+            return
+        popup = completer.popup()
+        completer.setCompletionPrefix("")
+        text = line_edit.text()
+        if text and popup is not None:
+            model = completer.model()
+            if model is not None:
+                match_indexes = model.match(
+                    model.index(0, 0),
+                    Qt.ItemDataRole.DisplayRole,
+                    text,
+                    1,
+                    Qt.MatchFlag.MatchExactly,
+                )
+                if match_indexes:
+                    popup.setCurrentIndex(match_indexes[0])
+                    popup.scrollTo(match_indexes[0])
+        popup_rect = line_edit.rect().translated(0, 2)
+        completer.complete(popup_rect)
 
     def _on_date_input_text_changed(self, target: InputWithIcon, text: str) -> None:
         if target not in self._date_inputs:
