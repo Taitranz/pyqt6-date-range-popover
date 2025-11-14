@@ -92,6 +92,10 @@ For heavier customization, import `date_range_popover.styles.theme` and build yo
 
 The metadata already lists the license, authorship, and dependencies, so those commands are all you need when you decide to publish.
 
+### Maintenance
+
+This is a side project I built for my own tools, and my schedule is pretty full, so I do not expect to actively iterate on it. I may occasionally fix critical issues, but you should treat the API and behavior as "use at your own risk" and feel free to fork if you need faster changes.
+
 ## License
 
 MIT License. See `LICENSE` for the exact terms.
