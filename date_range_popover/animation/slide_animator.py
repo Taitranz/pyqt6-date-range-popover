@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from typing import Protocol, runtime_checkable
 
 from PyQt6.QtCore import QObject, QTimer
 
@@ -11,6 +12,29 @@ from ..utils import connect_signal
 
 StepCallback = Callable[[int, int], None]
 CompleteCallback = Callable[[int, int], None] | None
+
+
+@runtime_checkable
+class AnimationStrategy(Protocol):
+    """
+    Protocol describing the animation surface used by the picker.
+
+    Implementations can plug in alternate easing curves, durations, or even
+    no-op animations for accessibility scenarios.
+    """
+
+    def animate(
+        self,
+        *,
+        current_position: int,
+        current_width: int,
+        target_position: int,
+        target_width: int,
+        on_step: StepCallback,
+        on_complete: CompleteCallback = None,
+    ) -> None: ...
+
+    def stop(self) -> None: ...
 
 
 class SlideAnimator(QObject):
@@ -98,3 +122,6 @@ class SlideAnimator(QObject):
     @staticmethod
     def _lerp(start: int, end: int, progress: float) -> int:
         return int(start + (end - start) * progress)
+
+
+__all__ = ["AnimationStrategy", "SlideAnimator", "StepCallback", "CompleteCallback"]

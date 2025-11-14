@@ -79,6 +79,11 @@ class DatePickerStateManager(QObject):
         Update the active picker mode and notify listeners.
 
         :param mode: Desired :class:`PickerMode`.
+        :raises InvalidDateError: Propagated from downstream logic when the
+            switch would violate invariants.
+
+        Thread Safety:
+            Must be invoked on the Qt GUI thread because it emits Qt signals.
         """
         if mode is self._state.mode:
             return
@@ -92,6 +97,12 @@ class DatePickerStateManager(QObject):
         Select a single date and clear any existing range selection.
 
         :param date: Candidate ``QDate`` (must be valid and within bounds).
+        :raises InvalidDateError: If ``date`` falls outside ``min_date`` /
+            ``max_date``.
+
+        Thread Safety:
+            Invoke from the Qt GUI thread; the method emits signals and touches
+            widgets indirectly via coordinators.
         """
         validated = cast(QDate, validate_qdate(date, field_name="selected_date"))
         validated = ensure_within_bounds(
@@ -115,6 +126,10 @@ class DatePickerStateManager(QObject):
 
         :param start: Range start (inclusive).
         :param end: Range end (inclusive).
+        :raises InvalidDateError: If either endpoint violates configured bounds.
+
+        Thread Safety:
+            Invoke from the Qt GUI thread to keep signal delivery consistent.
         """
         start_candidate, end_candidate = validate_date_range(
             start,
@@ -151,6 +166,10 @@ class DatePickerStateManager(QObject):
         Change the month displayed in the calendar UI.
 
         :param month: Any ``QDate`` within the desired month/year.
+        :raises InvalidDateError: If ``month`` is invalid.
+
+        Thread Safety:
+            Invoke from the Qt GUI thread; downstream widgets assume single-threaded access.
         """
         validated_month = cast(QDate, validate_qdate(month, field_name="visible_month"))
         target = clamp_visible_month(validated_month, self._min_date, self._max_date)
@@ -162,7 +181,12 @@ class DatePickerStateManager(QObject):
         self.state_changed.emit(self._state)
 
     def reset(self) -> None:
-        """Reset the internal state to today's date in ``DATE`` mode."""
+        """
+        Reset the internal state to today's date in ``DATE`` mode.
+
+        Thread Safety:
+            Call from the Qt GUI thread so emitted signals remain ordered.
+        """
         previous_mode = self._state.mode
         self._state = build_initial_state(self._min_date, self._max_date)
         start_date, _ = self._state.selected_dates

@@ -12,6 +12,9 @@ from .theme import (
 )
 
 ComponentType = Literal["button", "calendar", "input"]
+ButtonVariant = Literal["primary", "accent", "ghost"]
+CalendarVariant = Literal["default"]
+InputVariant = Literal["default"]
 
 
 class StyleRegistry:
@@ -124,7 +127,7 @@ class StyleRegistry:
     def get_stylesheet(
         self,
         component_type: ComponentType,
-        variant: str = "default",
+        variant: str | ButtonVariant | CalendarVariant | InputVariant = "default",
         **kwargs: Any,
     ) -> str:
         """
@@ -146,7 +149,7 @@ class StyleRegistry:
 
     # Button helpers -----------------------------------------------------------------
 
-    def button_config(self, variant: str = BUTTON_DEFAULT) -> ButtonStyleConfig:
+    def button_config(self, variant: str | ButtonVariant = BUTTON_DEFAULT) -> ButtonStyleConfig:
         """Fetch a button style configuration."""
         try:
             return self.BUTTON_STYLES[variant]
@@ -160,7 +163,7 @@ class StyleRegistry:
     def button_stylesheet(
         self,
         *,
-        variant: str = BUTTON_DEFAULT,
+        variant: str | ButtonVariant = BUTTON_DEFAULT,
         vertical_padding: int,
     ) -> str:
         """Render the stylesheet for a button variant."""
@@ -169,7 +172,9 @@ class StyleRegistry:
 
     # Calendar helpers ---------------------------------------------------------------
 
-    def calendar_config(self, variant: str = CALENDAR_DEFAULT) -> CalendarStyleConfig:
+    def calendar_config(
+        self, variant: str | CalendarVariant = CALENDAR_DEFAULT
+    ) -> CalendarStyleConfig:
         """Fetch a calendar style configuration."""
         try:
             return self.CALENDAR_STYLES[variant]
@@ -180,14 +185,14 @@ class StyleRegistry:
         """Register or overwrite a named calendar style."""
         self.CALENDAR_STYLES[name] = config
 
-    def calendar_stylesheet(self, *, variant: str = CALENDAR_DEFAULT) -> str:
+    def calendar_stylesheet(self, *, variant: str | CalendarVariant = CALENDAR_DEFAULT) -> str:
         """Render a simple background stylesheet for calendar containers."""
         config = self.calendar_config(variant)
         return f"background-color: {config.background};"
 
     # Input helpers ------------------------------------------------------------------
 
-    def input_config(self, variant: str = INPUT_DEFAULT) -> InputStyleConfig:
+    def input_config(self, variant: str | InputVariant = INPUT_DEFAULT) -> InputStyleConfig:
         """Fetch an input style configuration."""
         try:
             return self.INPUT_STYLES[variant]
@@ -198,7 +203,7 @@ class StyleRegistry:
         """Register or overwrite an input style variant."""
         self.INPUT_STYLES[name] = config
 
-    def input_stylesheet(self, *, variant: str = INPUT_DEFAULT) -> str:
+    def input_stylesheet(self, *, variant: str | InputVariant = INPUT_DEFAULT) -> str:
         """Render a minimal stylesheet for icon-enabled inputs."""
         config = self.input_config(variant)
         return (
@@ -206,3 +211,12 @@ class StyleRegistry:
             f"border: 1px solid {config.border_default};"
             "border-radius: 6px;"
         )
+
+
+__all__ = [
+    "ButtonVariant",
+    "CalendarVariant",
+    "ComponentType",
+    "InputVariant",
+    "StyleRegistry",
+]

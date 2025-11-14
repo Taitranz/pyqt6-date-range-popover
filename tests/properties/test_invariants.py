@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, timedelta
+from typing import Final
 
 import pytest
 from date_range_popover.api.config import DateRange
@@ -12,6 +13,7 @@ from date_range_popover.managers.state_manager import DatePickerStateManager
 from date_range_popover.utils import first_of_month
 from hypothesis import given
 from hypothesis import strategies as st
+from hypothesis.strategies import DrawFn
 from PyQt6.QtCore import QDate
 
 pytestmark = pytest.mark.usefixtures("qapp")
@@ -43,26 +45,39 @@ class Action:
     secondary_offset: int | None = None
 
 
+def _build_select_date(offset: int) -> Action:
+    return Action("select_date", offset)
+
+
+def _build_select_range(start_offset: int, end_offset: int) -> Action:
+    return Action("select_range", start_offset, end_offset)
+
+
+def _build_visible_month(offset: int) -> Action:
+    return Action("set_visible_month", offset)
+
+
 def _action_strategy(span_days: int) -> st.SearchStrategy[Action]:
     """Build a strategy that emits selection/visibility operations."""
-    offsets = st.integers(min_value=0, max_value=max(0, span_days))
+    max_offset: Final[int] = max(0, span_days)
+    offsets = st.integers(min_value=0, max_value=max_offset)
     return st.one_of(
-        st.builds(lambda value: Action("select_date", value), offsets),
-        st.builds(lambda start, end: Action("select_range", start, end), offsets, offsets),
-        st.builds(lambda value: Action("set_visible_month", value), offsets),
+        st.builds(_build_select_date, offsets),
+        st.builds(_build_select_range, offsets, offsets),
+        st.builds(_build_visible_month, offsets),
     )
 
 
 @st.composite
-def manager_scenarios(draw) -> tuple[QDate, QDate, Iterable[Action]]:
+def manager_scenarios(draw: DrawFn) -> tuple[QDate, QDate, list[Action]]:
     """Generate min/max bounds plus a sequence of actions to run."""
-    min_py = draw(st.dates(min_value=date(2020, 1, 1), max_value=date(2035, 1, 1)))
-    span_days = draw(st.integers(min_value=5, max_value=120))
-    max_py = min_py + timedelta(days=span_days)
-    min_q = _to_qdate(min_py)
-    max_q = _to_qdate(max_py)
-    action_count = draw(st.integers(min_value=1, max_value=15))
-    actions = draw(
+    min_py: date = draw(st.dates(min_value=date(2020, 1, 1), max_value=date(2035, 1, 1)))
+    span_days: int = draw(st.integers(min_value=5, max_value=120))
+    max_py: date = min_py + timedelta(days=span_days)
+    min_q: QDate = _to_qdate(min_py)
+    max_q: QDate = _to_qdate(max_py)
+    action_count: int = draw(st.integers(min_value=1, max_value=15))
+    actions: list[Action] = draw(
         st.lists(_action_strategy(span_days), min_size=action_count, max_size=action_count)
     )
     return min_q, max_q, actions

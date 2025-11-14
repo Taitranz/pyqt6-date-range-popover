@@ -1,10 +1,17 @@
 # Date Range Popover
 
 [![CI](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml/badge.svg)](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml)
-![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen)
+[![codecov](https://codecov.io/gh/Taitranz/pyqt6-date-range-popover/branch/main/graph/badge.svg)](https://codecov.io/gh/Taitranz/pyqt6-date-range-popover)
 ![Python](https://img.shields.io/badge/python-3.10--3.13-blue)
 
 I built this PyQt6 popover because I wanted a compact date and range picker I could drop into desktop tools without rewriting the same scaffolding each time.
+
+## Project Status
+
+- Feature-complete snapshot that I keep around as a reference implementation.
+- Not actively maintained—issues/PRs may sit, but the CI suite keeps the repo healthy.
+- Releases follow semantic versioning; see [CHANGELOG.md](CHANGELOG.md) for history.
+- Documentation lives under `docs/` and mirrors the published MkDocs site.
 
 ## What you get
 
@@ -161,7 +168,9 @@ Highlights:
 - [`docs/architecture.md`](docs/architecture.md) – state manager, theming, performance
 - [`docs/extending.md`](docs/extending.md) – theming + callback hooks
 - [`docs/api/public_api.md`](docs/api/public_api.md) – stability contract
+- [`docs/api/extension_points.md`](docs/api/extension_points.md) – supported hooks
 - [`docs/roadmap.md`](docs/roadmap.md) – upcoming work & design bets
+- [`docs/ARCHITECTURE_DECISIONS.md`](docs/ARCHITECTURE_DECISIONS.md) – key design trade-offs
 
 ## Contributing
 

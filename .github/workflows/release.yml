@@ -1,0 +1,66 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: pip install -e ".[test,dev,docs]" build twine
+
+      - name: Verify tag matches project version
+        run: |
+          python - <<'PY'
+          import pathlib
+          import tomllib
+          import os
+
+          root = pathlib.Path(__file__).resolve().parents[2]
+          pyproject = tomllib.loads(root.joinpath("pyproject.toml").read_text())
+          version = pyproject["project"]["version"]
+          ref = os.environ["GITHUB_REF_NAME"]
+          if not ref.startswith("v"):
+              raise SystemExit("Tags must start with 'v'")
+          if version != ref.lstrip("v"):
+              raise SystemExit(
+                  f"pyproject version {version} does not match tag {ref}"
+              )
+          PY
+
+      - name: Ruff lint
+        run: ruff check .
+
+      - name: Black formatting check
+        run: black --check .
+
+      - name: Type checking
+        run: mypy date_range_popover
+
+      - name: Run tests with coverage
+        run: >
+          pytest --maxfail=1 --disable-warnings
+          --cov=date_range_popover
+          --cov-report=term-missing
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          password: ${{ secrets.PYPI_API_TOKEN }}
+

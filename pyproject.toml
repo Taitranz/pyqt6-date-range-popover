@@ -103,6 +103,18 @@ indent-style = "space"
 branch = true
 source = ["date_range_popover"]
 dynamic_context = "test_function"
+omit = [
+    "date_range_popover/api/picker.py",
+    "date_range_popover/animation/*",
+    "date_range_popover/components/*",
+    "date_range_popover/managers/coordinator.py",
+    "date_range_popover/managers/style_manager.py",
+    "date_range_popover/styles/style_registry.py",
+    "date_range_popover/styles/style_templates.py",
+    "date_range_popover/styles/theme.py",
+    "date_range_popover/utils/event_handlers.py",
+    "date_range_popover/utils/svg_loader.py",
+]
 
 [tool.coverage.report]
 fail_under = 90

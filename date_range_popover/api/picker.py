@@ -5,7 +5,7 @@ from pathlib import Path
 from PyQt6.QtCore import QDate, Qt, QTime, pyqtSignal
 from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
-from ..animation.slide_animator import SlideAnimator
+from ..animation import AnimationStrategy, SlideAnimator
 from ..components.buttons import BasicButton, ButtonStrip
 from ..components.calendar import CalendarWidget
 from ..components.inputs import CUSTOM_DATE_RANGE, GO_TO_DATE, DateTimeSelector
@@ -93,7 +93,7 @@ class DateRangePicker(QWidget):
             max_date=self._config.max_date,
         )
         self._coordinator = DatePickerCoordinator(self._state_manager, self._style_manager)
-        self._animator = SlideAnimator(parent=self)
+        self._animator: AnimationStrategy = SlideAnimator(parent=self)
         self._current_track_position = 0
         self._current_track_width = self._layout_config.date_indicator_width
         self._selection_callbacks: list[SelectionCallback] = []

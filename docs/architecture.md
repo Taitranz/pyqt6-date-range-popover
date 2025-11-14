@@ -49,6 +49,23 @@ Switching modes triggers a sliding indicator animation (`SlideAnimator`) and
 resizes the popover to pre-defined heights, but the state manager retains the
 underlying selection so users can bounce between modes without losing progress.
 
+## Performance Characteristics
+
+- **State transitions** (selecting dates, switching modes, clamping bounds) are
+  `O(1)` operations because the state manager stores at most two `QDate` objects
+  and a single visible-month reference.
+- **Calendar rendering** is `O(#visible-days)`—roughly 42 cells for standard
+  monthly grids—so painting cost stays constant regardless of min/max ranges.
+- **Animations** run on a lightweight timer that updates only the sliding track’s
+  geometry; no expensive scene graphs or off-screen buffers are used.
+- **Memory footprint** stays bounded: the state manager holds `<= 2` `QDate`
+  objects, and themes are immutable dataclasses that can be reused across
+  multiple widget instances.
+- **I/O** is limited to Qt event handling; there are no background threads or
+  network calls.
+- **Large ranges** (multi-year) remain responsive because navigation only clamps
+  the month pointer and never materialises entire date ranges.
+
 ## Signals & Threading
 
 All signals fire on the Qt GUI thread. The library does not spawn background

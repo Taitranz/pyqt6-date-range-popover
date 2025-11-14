@@ -4,7 +4,12 @@ from typing import TYPE_CHECKING
 
 from PyQt6.QtWidgets import QWidget
 
-from ..styles.style_registry import StyleRegistry
+from ..styles.style_registry import (
+    ButtonVariant,
+    CalendarVariant,
+    InputVariant,
+    StyleRegistry,
+)
 from ..styles.theme import Theme
 
 if TYPE_CHECKING:  # pragma: no cover
@@ -45,7 +50,12 @@ class StyleManager:
 
     # Component-specific helpers -----------------------------------------------------
 
-    def apply_basic_button(self, button: BasicButton, *, variant: str | None = None) -> None:
+    def apply_basic_button(
+        self,
+        button: BasicButton,
+        *,
+        variant: str | ButtonVariant | None = None,
+    ) -> None:
         """Apply the configured button variant stylesheet."""
         target_variant = variant or self._registry.BUTTON_DEFAULT
         config = self._registry.button_config(target_variant)
@@ -57,13 +67,23 @@ class StyleManager:
         button_strip.apply_palette(self.theme.palette)
         button_strip.apply_layout(self.theme.layout)
 
-    def apply_calendar(self, calendar: CalendarWidget, *, variant: str | None = None) -> None:
+    def apply_calendar(
+        self,
+        calendar: CalendarWidget,
+        *,
+        variant: str | CalendarVariant | None = None,
+    ) -> None:
         """Apply a calendar style variant to the calendar widget."""
         target_variant = variant or self._registry.CALENDAR_DEFAULT
         config = self._registry.calendar_config(target_variant)
         calendar.apply_style(config)
 
-    def apply_input(self, input_widget: InputWithIcon, *, variant: str | None = None) -> None:
+    def apply_input(
+        self,
+        input_widget: InputWithIcon,
+        *,
+        variant: str | InputVariant | None = None,
+    ) -> None:
         """Apply the configured input style variant to the widget."""
         target_variant = variant or self._registry.INPUT_DEFAULT
         config = self._registry.input_config(target_variant)

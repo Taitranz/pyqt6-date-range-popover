@@ -14,6 +14,28 @@ package reaches `v1.0.0`.
   internal helpers.
 - All guarantees apply to releases `>= 1.0.0`. Pre-release builds may change
   without deprecation.
+- Deprecation timelines and expectations are documented in
+  [`docs/api/deprecation_policy.md`](docs/api/deprecation_policy.md).
+
+## Versioned Behavior Guarantees
+
+The following behaviors are contractually guaranteed beginning with `v0.1.0` and
+apply to all future releases unless a formal deprecation has been announced.
+
+- `selected_range` is always either `None` or a normalized `DateRange` whose
+  `start_date <= end_date`.
+- `DatePickerStateManager` clamps every selection attempt to `[min_date, max_date]`
+  and raises `InvalidDateError` when the bounds are violated.
+- `DatePickerConfig` replaces a missing `max_date` with `QDate.currentDate()`,
+  ensuring future dates remain disabled by default.
+- `DateRangePopover` never mutates `DatePickerConfig` instances passed to it;
+  treat configs as immutable snapshots.
+- All Qt signals (`date_selected`, `range_selected`, `cancelled`) fire on the UI
+  thread and emit defensive copies of `QDate`/`DateRange`.
+- Mode transitions are idempotent; reassigning the active mode to its current value
+  does not emit duplicate signals.
+- Theme validation rejects invalid hex codes and zero/negative dimensions before any
+  widgets are instantiated.
 
 ## `DateRangePopover` / `DateRangePicker`
 
@@ -75,6 +97,8 @@ package reaches `v1.0.0`.
   constructor; treat configs as immutable.
 - The library does not spawn threads; all callbacks and signals fire on the Qt
   GUI thread.
+- Deprecation notices remain in place for at least two minor releases; see the
+  dedicated deprecation policy for migration expectations.
 
 ## Non-Guaranteed / Internal Modules
 
