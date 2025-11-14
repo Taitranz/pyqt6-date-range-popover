@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Optional
 
 from PyQt6.QtCore import QDate, QTime
 
@@ -9,7 +8,6 @@ from ..exceptions import InvalidConfigurationError
 from ..managers.state_manager import PickerMode
 from ..styles.theme import LayoutConfig, Theme
 from ..validation import validate_date_range, validate_dimension, validate_qdate
-
 
 _DEFAULT_LAYOUT = LayoutConfig()
 
@@ -26,17 +24,28 @@ class DateRange:
     values are checked for ``QTime.isValid``. ``None`` values are preserved
     so callers can intentionally pass open ranges.
 
-    :param start_date: Inclusive start of the range.
-    :param end_date: Inclusive end of the range (must be >= ``start_date``).
-    :param start_time: Optional time that pairs with ``start_date``.
-    :param end_time: Optional time that pairs with ``end_date``.
-    :raises InvalidConfigurationError: If any ``QTime`` or ``QDate`` is invalid.
+    Args:
+        start_date: Inclusive start of the range (``None`` for an open range).
+        end_date: Inclusive end of the range (``None`` for an open range).
+        start_time: Optional time paired with ``start_date``.
+        end_time: Optional time paired with ``end_date``.
+
+    Raises:
+        InvalidConfigurationError: If any ``QDate`` or ``QTime`` value is
+            invalid or if ``start_date`` is after ``end_date``.
+
+    Example:
+        >>> from PyQt6.QtCore import QDate
+        >>> DateRange(
+        ...     start_date=QDate(2024, 1, 1),
+        ...     end_date=QDate(2024, 1, 10),
+        ... )
     """
 
-    start_date: Optional[QDate] = None
-    end_date: Optional[QDate] = None
-    start_time: Optional[QTime] = None
-    end_time: Optional[QTime] = None
+    start_date: QDate | None = None
+    end_date: QDate | None = None
+    start_time: QTime | None = None
+    end_time: QTime | None = None
 
     def __post_init__(self) -> None:
         """Normalise and validate date/time fields immediately after creation."""
@@ -76,27 +85,39 @@ class DatePickerConfig:
     all dates flow through :func:`validate_qdate`, and ranges are validated
     by :func:`validate_date_range`.
 
-    :param width: Fixed width of the popover window (pixels).
-    :param height: Fixed height of the popover window when in ``DATE`` mode.
-    :param theme: Theme object containing palette and layout tokens.
-    :param initial_date: Single-date default selection.
-    :param initial_range: Pre-selected range; overrides ``initial_date``.
-    :param mode: Initial :class:`PickerMode` (``DATE`` or ``CUSTOM_RANGE``).
-    :param min_date: Absolute lower bound for user selection/navigation.
-    :param max_date: Absolute upper bound for user selection/navigation. Defaults
-        to ``QDate.currentDate()`` when omitted to prevent future selections.
-    :param time_step_minutes: Step interval for the time selector component.
-    :raises InvalidConfigurationError: For any inconsistent or invalid values.
+    Args:
+        width: Fixed window width in pixels.
+        height: Fixed window height in ``DATE`` mode.
+        theme: Theme object containing palette and layout tokens.
+        initial_date: Single-date default selection.
+        initial_range: Pre-selected range that overrides ``initial_date``.
+        mode: Initial :class:`PickerMode` (``DATE`` or ``CUSTOM_RANGE``).
+        min_date: Absolute lower bound for selection/navigation.
+        max_date: Absolute upper bound for selection/navigation. Defaults to
+            ``QDate.currentDate()`` when omitted to prevent future selections.
+        time_step_minutes: Step interval for the time selector component.
+
+    Raises:
+        InvalidConfigurationError: For any inconsistent value (dimensions out of
+            bounds, ``min_date > max_date``, invalid ``Theme`` instances, etc.).
+
+    Example:
+        >>> from PyQt6.QtCore import QDate
+        >>> DatePickerConfig(
+        ...     mode=PickerMode.CUSTOM_RANGE,
+        ...     min_date=QDate(2023, 1, 1),
+        ...     max_date=QDate(2024, 12, 31),
+        ... )
     """
 
     width: int = _DEFAULT_LAYOUT.window_min_width
     height: int = _DEFAULT_LAYOUT.window_min_height
     theme: Theme = field(default_factory=Theme)
-    initial_date: Optional[QDate] = None
-    initial_range: Optional[DateRange] = None
+    initial_date: QDate | None = None
+    initial_range: DateRange | None = None
     mode: PickerMode = PickerMode.DATE
-    min_date: Optional[QDate] = None
-    max_date: Optional[QDate] = None
+    min_date: QDate | None = None
+    max_date: QDate | None = None
     time_step_minutes: int = 15
 
     def __post_init__(self) -> None:
@@ -125,7 +146,9 @@ class DatePickerConfig:
             min_value=1,
             max_value=60,
         )
-        self.initial_date = validate_qdate(self.initial_date, field_name="initial_date", allow_none=True)
+        self.initial_date = validate_qdate(
+            self.initial_date, field_name="initial_date", allow_none=True
+        )
         candidate_range = object.__getattribute__(self, "initial_range")
         if candidate_range is not None and not isinstance(candidate_range, DateRange):
             raise InvalidConfigurationError("initial_range must be a DateRange instance")
@@ -144,7 +167,9 @@ class DatePickerConfig:
             self._ensure_within_bounds(self.initial_date, "initial_date")
         if self.initial_range is not None:
             if self.initial_range.start_date is not None:
-                self._ensure_within_bounds(self.initial_range.start_date, "initial_range.start_date")
+                self._ensure_within_bounds(
+                    self.initial_range.start_date, "initial_range.start_date"
+                )
             if self.initial_range.end_date is not None:
                 self._ensure_within_bounds(self.initial_range.end_date, "initial_range.end_date")
 
@@ -164,5 +189,3 @@ class DatePickerConfig:
 
 
 __all__ = ["DatePickerConfig", "DateRange", "PickerMode"]
-
-

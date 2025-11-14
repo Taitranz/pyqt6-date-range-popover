@@ -15,5 +15,3 @@ __all__ = [
     "GO_TO_DATE",
     "CUSTOM_DATE_RANGE",
 ]
-
-

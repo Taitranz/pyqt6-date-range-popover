@@ -24,4 +24,3 @@ def test_basic_popover_demo_configuration(qtbot: QtBot) -> None:
     assert popover.isVisible()
 
     popover.cleanup()
-

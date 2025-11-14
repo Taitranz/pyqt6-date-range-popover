@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from PyQt6.QtWidgets import QApplication, QWidget
-
 from date_range_popover.api.picker import CLOSE_ICON_PATH
 from date_range_popover.api.picker_layouts import (
     build_actions_section,
@@ -17,6 +15,7 @@ from date_range_popover.components.calendar import CalendarWidget
 from date_range_popover.components.inputs import DateTimeSelector
 from date_range_popover.components.layout import DraggableHeaderStrip, SlidingTrackIndicator
 from date_range_popover.styles.style_registry import StyleRegistry
+from PyQt6.QtWidgets import QApplication, QWidget
 
 
 def _build_common_components(
@@ -152,4 +151,3 @@ def test_build_content_container_composes_header_and_section(qapp: QApplication)
     )
     assert header.parent() is container
     assert section.parent() is container
-

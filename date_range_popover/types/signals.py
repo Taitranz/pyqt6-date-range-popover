@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, Generic, ParamSpec, Protocol, TypeAlias, TYPE_CHECKING
+from collections.abc import Callable
+from typing import TYPE_CHECKING, Generic, ParamSpec, Protocol, TypeAlias
 
 from PyQt6.QtCore import QDate
 
@@ -44,5 +45,3 @@ __all__ = [
     "IntSignal",
     "StrSignal",
 ]
-
-

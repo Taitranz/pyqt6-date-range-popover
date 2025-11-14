@@ -3,5 +3,3 @@
 from .slide_animator import SlideAnimator
 
 __all__ = ["SlideAnimator"]
-
-

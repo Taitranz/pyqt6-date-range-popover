@@ -17,6 +17,3 @@ __all__ = [
     "connect_signal",
     "connect_if_present",
 ]
-
-
-

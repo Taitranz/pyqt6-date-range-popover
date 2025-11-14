@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 import pytest
-from PyQt6.QtCore import QDate
-from PyQt6.QtTest import QSignalSpy
-
 from date_range_popover.managers.state_manager import DatePickerStateManager, PickerMode
 from date_range_popover.utils import first_of_month
+from PyQt6.QtCore import QDate
+from PyQt6.QtTest import QSignalSpy
 
 pytestmark = pytest.mark.usefixtures("qapp")
 

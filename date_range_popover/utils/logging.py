@@ -21,5 +21,3 @@ def configure_basic_logging(level: int = logging.INFO) -> None:
 
 
 __all__ = ["get_logger", "configure_basic_logging"]
-
-

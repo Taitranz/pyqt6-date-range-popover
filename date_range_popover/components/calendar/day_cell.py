@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-
-from PyQt6.QtCore import QDate, Qt, pyqtSignal, QEvent, QObject
+from PyQt6.QtCore import QDate, QEvent, QObject, Qt, pyqtSignal
 from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtWidgets import QPushButton, QSizePolicy, QWidget
 
@@ -153,12 +152,9 @@ class CalendarDayCell(QWidget):
         underline_offset = self._layout.calendar_day_underline_offset
         underline_width_config = self._layout.calendar_day_underline_width
 
-        if underline_offset < 0:
-            underline_offset = 0
-        if underline_height < 0:
-            underline_height = 0
-        if underline_width_config < 0:
-            underline_width_config = 0
+        underline_offset = max(underline_offset, 0)
+        underline_height = max(underline_height, 0)
+        underline_width_config = max(underline_width_config, 0)
 
         usable_height = max(0, min(underline_height, size))
         usable_width = max(0, min(underline_width_config, size))
@@ -218,13 +214,9 @@ class CalendarDayCell(QWidget):
         height = self._layout.calendar_day_underline_height
         radius = max(0, height // 2)
         self._underline.setStyleSheet(
-            f"background-color: {color};"
-            "border: none;"
-            f"border-radius: {radius}px;"
+            f"background-color: {color};" "border: none;" f"border-radius: {radius}px;"
         )
         self._underline.show()
 
 
 __all__ = ["CalendarDayCell"]
-
-

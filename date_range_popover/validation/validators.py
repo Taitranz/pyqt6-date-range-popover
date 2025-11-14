@@ -25,7 +25,9 @@ def validate_hex_color(value: object, *, field_name: str = "color") -> str:
         raise InvalidConfigurationError(f"{field_name} must be a string, got {type(value)!r}")
     normalized = value.strip()
     if not _HEX_RE.fullmatch(normalized):
-        raise InvalidConfigurationError(f"{field_name} must be a #RRGGBB or #RRGGBBAA value, got {value!r}")
+        raise InvalidConfigurationError(
+            f"{field_name} must be a #RRGGBB or #RRGGBBAA value, got {value!r}"
+        )
     return normalized
 
 
@@ -95,7 +97,9 @@ def validate_date_range(
     :param allow_partial: Whether missing endpoints are permitted.
     :raises ValidationError: If both endpoints are required but missing.
     """
-    validated_start = validate_qdate(start, field_name=f"{field_name}.start", allow_none=allow_partial)
+    validated_start = validate_qdate(
+        start, field_name=f"{field_name}.start", allow_none=allow_partial
+    )
     validated_end = validate_qdate(end, field_name=f"{field_name}.end", allow_none=allow_partial)
 
     if not allow_partial and (validated_start is None or validated_end is None):
@@ -116,5 +120,3 @@ __all__ = [
     "validate_qdate",
     "validate_date_range",
 ]
-
-

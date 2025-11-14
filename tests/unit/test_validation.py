@@ -3,15 +3,18 @@
 from __future__ import annotations
 
 import pytest
-from PyQt6.QtCore import QDate
-
-from date_range_popover.exceptions import InvalidConfigurationError, InvalidDateError, ValidationError
+from date_range_popover.exceptions import (
+    InvalidConfigurationError,
+    InvalidDateError,
+    ValidationError,
+)
 from date_range_popover.validation import (
     validate_date_range,
     validate_dimension,
     validate_hex_color,
     validate_qdate,
 )
+from PyQt6.QtCore import QDate
 
 
 def test_validate_hex_color_accepts_valid_values() -> None:

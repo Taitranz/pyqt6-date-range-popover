@@ -1,0 +1,4 @@
+# file: C:\Users\taitr\OneDrive\Desktop\Projects\valgo-component-designs\date-select-menu\date_range_popover\styles\theme.py
+# hypothesis_version: 6.147.0
+
+[100, 105, 262, 302, 580, 640, '#000000', '#00000000', '#143a87', '#1f1f1f', '#2962ff', '#2a2a2a', '#2e2e2e', '#2e2e2e66', '#2e2e2e99', '#343434', '#4a4a4a', '#575757', '#707070', '#8c8c8c', '#dbdbdb', '#f2f2f2', '#f5f5f5', '#ffffff', 'ButtonStyleConfig', 'CalendarStyleConfig', 'ColorPalette', 'DEFAULT_THEME', 'InputStyleConfig', 'LayoutConfig', 'Theme', 'ThemeProvider', 'action_button_height', 'date_button_width', 'date_indicator_width', 'default_track_width', 'layout', 'palette', 'theme_from_mapping', 'window_min_height', 'window_min_width']

@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -46,7 +46,7 @@ class CalendarYearView(QWidget):
                 today_background="#f5f5f5",
                 today_text_color="#1f1f1f",
                 today_underline_color="#1f1f1f",
-            day_hover_background="#2e2e2e",
+                day_hover_background="#2e2e2e",
                 day_hover_text_color="#f5f5f5",
                 nav_icon_color="#dbdbdb",
                 day_label_background="#2e2e2e",
@@ -150,5 +150,3 @@ class CalendarYearView(QWidget):
 
 
 __all__ = ["CalendarYearView"]
-
-

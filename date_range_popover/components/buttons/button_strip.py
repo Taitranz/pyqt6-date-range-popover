@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import QEvent, QObject, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QHBoxLayout,
@@ -21,11 +19,13 @@ class ButtonStrip(QWidget):
     date_selected = pyqtSignal()
     custom_range_selected = pyqtSignal()
 
-    def __init__(self, parent: Optional[QWidget] = None, *, layout_config: LayoutConfig | None = None) -> None:
+    def __init__(
+        self, parent: QWidget | None = None, *, layout_config: LayoutConfig | None = None
+    ) -> None:
         super().__init__(parent)
 
         self._selected_button = "date"
-        self._hovered_button: Optional[str] = None
+        self._hovered_button: str | None = None
         self._gap: QWidget | None = None
 
         self._layout_config = layout_config or LayoutConfig()
@@ -134,5 +134,3 @@ class ButtonStrip(QWidget):
 
 
 __all__ = ["ButtonStrip"]
-
-

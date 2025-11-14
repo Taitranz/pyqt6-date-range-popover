@@ -7,9 +7,8 @@ from collections.abc import Callable
 from typing import Any
 
 import pytest
-from PyQt6.QtWidgets import QApplication
-
 from date_range_popover.api.config import DatePickerConfig, DateRange
+from PyQt6.QtWidgets import QApplication
 
 # Force headless Qt rendering in CI and local terminals that lack a display server.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -48,4 +47,3 @@ def fixture_date_range_factory() -> Callable[..., DateRange]:
         return DateRange(**overrides)
 
     return _factory
-

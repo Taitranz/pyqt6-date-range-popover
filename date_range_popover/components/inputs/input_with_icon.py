@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Final, Optional, Pattern
+from re import Pattern
+from typing import Final
 
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QEnterEvent
@@ -17,6 +18,8 @@ DEFAULT_HEIGHT: Final[int] = 34
 DEFAULT_WIDTH: Final[int] = 150
 DEFAULT_ICON_PLACEHOLDER_WIDTH: Final[int] = 32
 DEFAULT_ICON_SIZE: Final[int] = 28
+
+
 class InputWithIcon(QWidget):
     """Input widget that hosts a text field with an optional icon."""
 
@@ -42,7 +45,7 @@ class InputWithIcon(QWidget):
 
         self._style = style or _default_style()
         self._icon_path = Path(icon_path) if icon_path is not None else None
-        self._icon_template: Optional[str] = None
+        self._icon_template: str | None = None
         self._is_hovered = False
         self._was_previously_focused = False
         self._max_length = max_length
@@ -188,7 +191,7 @@ class InputWithIcon(QWidget):
             return True
         return bool(self._compiled_pattern.fullmatch(text))
 
-    def _build_icon_widget(self, icon_path: Optional[Path]) -> QWidget:
+    def _build_icon_widget(self, icon_path: Path | None) -> QWidget:
         if icon_path is None:
             return self._create_letter_placeholder()
 
@@ -290,5 +293,3 @@ def _default_style() -> InputStyleConfig:
 
 
 __all__ = ["InputWithIcon"]
-
-

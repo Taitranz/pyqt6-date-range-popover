@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional
 
-from PyQt6.QtCore import QDate, QTime, Qt, pyqtSignal
-from PyQt6.QtWidgets import QVBoxLayout, QWidget, QSizePolicy
+from PyQt6.QtCore import QDate, Qt, QTime, pyqtSignal
+from PyQt6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
 from ..animation.slide_animator import SlideAnimator
 from ..components.buttons import BasicButton, ButtonStrip
@@ -15,6 +14,7 @@ from ..managers.coordinator import DatePickerCoordinator
 from ..managers.state_manager import DatePickerStateManager, PickerMode
 from ..managers.style_manager import StyleManager
 from ..styles.style_registry import StyleRegistry
+from ..types.selection import SelectionCallback, SelectionSnapshot
 from ..utils import connect_signal, get_logger
 from .config import DatePickerConfig, DateRange
 from .picker_layouts import (
@@ -40,6 +40,11 @@ class DateRangePicker(QWidget):
     resources. Everything else—layout, component wiring, state transitions—is
     encapsulated so the embedding code stays simple.
 
+    Example:
+        >>> picker = DateRangePicker(DatePickerConfig(mode=PickerMode.DATE))
+        >>> picker.date_selected.connect(lambda d: print(d.toString("yyyy-MM-dd")))
+        >>> picker.show()
+
     Signals
     -------
     date_selected(QDate)
@@ -57,7 +62,7 @@ class DateRangePicker(QWidget):
 
     def __init__(
         self,
-        config: Optional[DatePickerConfig] = None,
+        config: DatePickerConfig | None = None,
         parent: QWidget | None = None,
     ) -> None:
         """
@@ -67,8 +72,14 @@ class DateRangePicker(QWidget):
         internal managers immediately, so callers should treat the config object
         as immutable after passing it in.
 
-        :param config: Optional :class:`DatePickerConfig`. Defaults to ``DatePickerConfig()``.
-        :param parent: Optional widget parent for lifetime management.
+        Args:
+            config: Optional :class:`DatePickerConfig`. Defaults to a new
+                instance when omitted.
+            parent: Optional widget parent for lifetime management.
+
+        Raises:
+            InvalidConfigurationError: Propagated when ``config`` contains
+                invalid values (for example, ``min_date > max_date``).
         """
         super().__init__(parent)
 
@@ -85,6 +96,7 @@ class DateRangePicker(QWidget):
         self._animator = SlideAnimator(parent=self)
         self._current_track_position = 0
         self._current_track_width = self._layout_config.date_indicator_width
+        self._selection_callbacks: list[SelectionCallback] = []
 
         self._header_strip = DraggableHeaderStrip(self, palette=self._style_manager.theme.palette)
         self._button_strip = ButtonStrip(self, layout_config=self._layout_config)
@@ -110,8 +122,12 @@ class DateRangePicker(QWidget):
             time_step_minutes=self._config.time_step_minutes,
         )
         self._calendar = CalendarWidget(self, style=registry.calendar_config())
-        self._calendar.set_constraints(min_date=self._config.min_date, max_date=self._config.max_date)
-        self._cancel_button = BasicButton(self, label="Cancel", width=72, layout=self._layout_config)
+        self._calendar.set_constraints(
+            min_date=self._config.min_date, max_date=self._config.max_date
+        )
+        self._cancel_button = BasicButton(
+            self, label="Cancel", width=72, layout=self._layout_config
+        )
         self._go_to_button = BasicButton(self, label="Go to", width=64, layout=self._layout_config)
 
         self._build_ui()
@@ -125,9 +141,15 @@ class DateRangePicker(QWidget):
         """
         Currently selected single date.
 
-        The property returns an invalid ``QDate`` (``QDate()``) when there is no
-        active single-date selection. Prefer checking ``QDate.isValid`` when you
-        need to differentiate between "no selection" and a real date.
+        Returns:
+            A defensive ``QDate`` copy representing the active single-date
+            selection. The value is invalid (``QDate()``) when no single date is
+            locked in.
+
+        Guarantees:
+            * When valid, the date always respects ``config.min_date`` /
+              ``config.max_date``.
+            * The returned object is never shared with internal state.
         """
         start, _ = self._state_manager.state.selected_dates
         return start or QDate()
@@ -137,9 +159,14 @@ class DateRangePicker(QWidget):
         """
         Currently selected range (may be partial).
 
-        Any missing endpoints remain ``None``. The returned object is a new
-        :class:`DateRange`, so callers can store it without worrying about
-        internal state mutation.
+        Returns:
+            :class:`DateRange`: a defensive copy with the best-known endpoints.
+            Missing endpoints remain ``None`` so callers can differentiate
+            between partial and complete selections.
+
+        Guarantees:
+            * When present, endpoints always satisfy ``start <= end``.
+            * Every endpoint is clamped to ``[min_date, max_date]``.
         """
         start, end = self._state_manager.state.selected_dates
         return DateRange(start_date=start, end_date=end)
@@ -148,7 +175,12 @@ class DateRangePicker(QWidget):
         """
         Switch the picker to the provided :class:`PickerMode`.
 
-        :param mode: ``PickerMode.DATE`` or ``PickerMode.CUSTOM_RANGE``.
+        Args:
+            mode: ``PickerMode.DATE`` or ``PickerMode.CUSTOM_RANGE``.
+
+        Notes:
+            Must be invoked from the Qt GUI thread because it drives widget
+            mutations and animations.
         """
         LOGGER.debug("Switching picker mode via API: %s", mode.name)
         self._coordinator.switch_mode(mode)
@@ -158,8 +190,11 @@ class DateRangePicker(QWidget):
         Reset the picker state to match the initial configuration.
 
         This method clears animations, re-applies selection defaults, and
-        ensures the coordinator redraws UI components. It is safe to call any
-        time the host wants to discard in-progress user input.
+        ensures the coordinator redraws UI components.
+
+        Notes:
+            Safe to call any time the host wants to discard in-progress user
+            input. Must run on the Qt GUI thread.
         """
         LOGGER.info("Resetting DateRangePicker to configuration defaults")
         self._animator.stop()
@@ -172,12 +207,42 @@ class DateRangePicker(QWidget):
 
         Call this during application teardown or when removing the widget from a
         complex embedding scenario to make sure timers/animations are cleaned up.
+
+        Notes:
+            The widget becomes unusable after ``cleanup``; create a new instance
+            if you need to re-mount the UI.
         """
         LOGGER.info("Cleaning up DateRangePicker resources")
         self._animator.stop()
         self._date_time_selector.cleanup()
         self._coordinator.deleteLater()
         self._state_manager.deleteLater()
+
+    def register_selection_callback(self, callback: SelectionCallback) -> None:
+        """
+        Register a Python callback that mirrors the Qt selection signals.
+
+        Args:
+            callback: Callable that receives a :class:`SelectionSnapshot`.
+
+        Notes:
+            Callbacks are invoked synchronously on the Qt GUI thread. They are
+            in addition to (not instead of) the Qt signals, which remain the
+            canonical integration surface for Qt consumers.
+        """
+        if callback not in self._selection_callbacks:
+            self._selection_callbacks.append(callback)
+
+    def deregister_selection_callback(self, callback: SelectionCallback) -> None:
+        """
+        Remove a previously registered callback.
+
+        Calling this method with an unknown callback is a no-op.
+        """
+        try:
+            self._selection_callbacks.remove(callback)
+        except ValueError:
+            pass
 
     # Internal setup ----------------------------------------------------------------
 
@@ -266,7 +331,7 @@ class DateRangePicker(QWidget):
         connect_signal(self._close_button.clicked, self.cancelled.emit)
         connect_signal(self._cancel_button.clicked, self.cancelled.emit)
 
-        connect_signal(self._state_manager.selected_date_changed, self.date_selected.emit)
+        connect_signal(self._state_manager.selected_date_changed, self._handle_selected_date)
         connect_signal(self._state_manager.selected_range_changed, self._emit_range_selected)
 
         connect_signal(self._go_to_button.clicked, self._emit_current_selection)
@@ -325,9 +390,16 @@ class DateRangePicker(QWidget):
             on_complete=lambda pos, width: self._sliding_track.set_state(position=pos, width=width),
         )
 
+    def _handle_selected_date(self, date: QDate) -> None:
+        """Emit ``date_selected`` and notify Python callbacks."""
+        self.date_selected.emit(date)
+        self._notify_selection_callbacks(self._build_snapshot())
+
     def _emit_range_selected(self, start: QDate, end: QDate) -> None:
         """Emit ``range_selected`` with a defensive :class:`DateRange` copy."""
-        self.range_selected.emit(DateRange(start_date=start, end_date=end))
+        payload = DateRange(start_date=start, end_date=end)
+        self.range_selected.emit(payload)
+        self._notify_selection_callbacks(self._build_snapshot(range_override=payload))
 
     def _emit_current_selection(self) -> None:
         """Emit the most specific signal for the current selection."""
@@ -378,7 +450,25 @@ class DateRangePicker(QWidget):
 
         return start_date, end_date, start_time, end_time
 
+    def _build_snapshot(self, *, range_override: DateRange | None = None) -> SelectionSnapshot:
+        """Construct a snapshot describing the current selection state."""
+        state = self._state_manager.state
+        start, end = state.selected_dates
+        current_range = range_override
+        if current_range is None and (start is not None or end is not None):
+            current_range = DateRange(start_date=start, end_date=end)
+        return SelectionSnapshot(
+            mode=state.mode,
+            selected_date=start,
+            selected_range=current_range,
+        )
+
+    def _notify_selection_callbacks(self, snapshot: SelectionSnapshot) -> None:
+        """Invoke registered Python callbacks."""
+        if not self._selection_callbacks:
+            return
+        for callback in list(self._selection_callbacks):
+            callback(snapshot)
+
 
 __all__ = ["DateRangePicker"]
-
-

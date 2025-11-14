@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QResizeEvent
 from PyQt6.QtWidgets import (
@@ -19,7 +17,7 @@ class SlidingTrackIndicator(QWidget):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         *,
         palette: ColorPalette | None = None,
         layout: LayoutConfig | None = None,
@@ -76,12 +74,10 @@ class SlidingTrackIndicator(QWidget):
         self.setStyleSheet(f"background-color: {palette.window_background};")
         radius = self._layout.sliding_indicator_radius
         self._track_container.setStyleSheet(
-            f"background-color: {palette.track_background}; "
-            f"border-radius: {radius}px;"
+            f"background-color: {palette.track_background}; " f"border-radius: {radius}px;"
         )
         self._indicator.setStyleSheet(
-            f"background-color: {palette.track_indicator_color}; "
-            f"border-radius: {radius}px;"
+            f"background-color: {palette.track_indicator_color}; " f"border-radius: {radius}px;"
         )
 
     def apply_layout(self, layout: LayoutConfig) -> None:
@@ -92,8 +88,7 @@ class SlidingTrackIndicator(QWidget):
         self._track_container.setFixedHeight(height)
         self._indicator.setFixedHeight(height)
         self._track_container.setStyleSheet(
-            f"background-color: {self._palette.track_background}; "
-            f"border-radius: {radius}px;"
+            f"background-color: {self._palette.track_background}; " f"border-radius: {radius}px;"
         )
         self._indicator.setStyleSheet(
             f"background-color: {self._palette.track_indicator_color}; "
@@ -116,7 +111,7 @@ class SlidingTrackIndicator(QWidget):
         self._indicator.setFixedWidth(self._current_width)
         self._update_layout()
 
-    def resizeEvent(self, a0: Optional[QResizeEvent]) -> None:  # noqa: N802
+    def resizeEvent(self, a0: QResizeEvent | None) -> None:  # noqa: N802
         super().resizeEvent(a0)
         self._update_layout()
 
@@ -132,5 +127,3 @@ class SlidingTrackIndicator(QWidget):
 
 
 __all__ = ["SlidingTrackIndicator"]
-
-

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtWidgets import QWidget
@@ -66,5 +66,3 @@ class MouseFocusFilter(QObject):
 
 
 __all__ = ["HoverEventFilter", "FocusForwardingFilter", "MouseFocusFilter"]
-
-

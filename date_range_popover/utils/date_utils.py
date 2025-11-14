@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterator, Tuple
+from collections.abc import Iterator
 
 from PyQt6.QtCore import QDate
 
@@ -23,7 +23,7 @@ def first_of_month(date: QDate) -> QDate:
     return QDate(date.year(), date.month(), 1)
 
 
-def normalize_range(start: QDate, end: QDate) -> Tuple[QDate, QDate]:
+def normalize_range(start: QDate, end: QDate) -> tuple[QDate, QDate]:
     """Return an ordered tuple where ``start`` <= ``end``."""
     if not start.isValid() or not end.isValid():
         raise InvalidDateError("Both start and end dates must be valid QDate instances")
@@ -42,5 +42,3 @@ def iter_month_days(month: QDate) -> Iterator[QDate]:
 
 
 __all__ = ["copy_qdate", "first_of_month", "normalize_range", "iter_month_days"]
-
-

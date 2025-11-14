@@ -2,13 +2,12 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QDate
-
 from date_range_popover.components.calendar.year_range_utils import (
     clamp_year_range_start,
     compute_year_range_start,
     year_range_limits,
 )
+from PyQt6.QtCore import QDate
 
 
 def test_compute_year_range_start_aligns_to_span() -> None:
@@ -46,18 +45,23 @@ def test_clamp_year_range_start_obeys_limits() -> None:
 
     min_date = QDate(2000, 1, 1)
     max_date = QDate(2100, 1, 1)
-    assert clamp_year_range_start(
-        1901,
-        min_date,
-        max_date,
-        20,
-        max_year=9999,
-    ) == 1981
-    assert clamp_year_range_start(
-        2201,
-        min_date,
-        max_date,
-        20,
-        max_year=9999,
-    ) == 2081
-
+    assert (
+        clamp_year_range_start(
+            1901,
+            min_date,
+            max_date,
+            20,
+            max_year=9999,
+        )
+        == 1981
+    )
+    assert (
+        clamp_year_range_start(
+            2201,
+            min_date,
+            max_date,
+            20,
+            max_year=9999,
+        )
+        == 2081
+    )

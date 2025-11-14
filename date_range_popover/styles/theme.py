@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass, field, fields
+from typing import Any, Protocol, runtime_checkable
 
 from ..exceptions import InvalidThemeError
 from ..validation import validate_dimension, validate_hex_color
@@ -276,7 +278,43 @@ class Theme:
             raise InvalidThemeError("layout must be an instance of LayoutConfig")
 
 
+@runtime_checkable
+class ThemeProvider(Protocol):
+    """Protocol describing a factory that returns a fully built :class:`Theme`."""
+
+    def build_theme(self) -> Theme: ...
+
+
+def theme_from_mapping(payload: Mapping[str, Any]) -> Theme:
+    """
+    Build a :class:`Theme` from mapping data (for example, parsed JSON/YAML).
+
+    Args:
+        payload: Nested mapping containing optional ``palette`` / ``layout`` keys.
+
+    Returns:
+        Fully validated :class:`Theme` instance.
+    """
+
+    palette_data = payload.get("palette", {})
+    layout_data = payload.get("layout", {})
+    palette = ColorPalette(**palette_data)
+    layout = LayoutConfig(**layout_data)
+    return Theme(palette=palette, layout=layout)
+
+
 DEFAULT_THEME = Theme()
 """Default theme instance used when callers do not supply one."""
 
 
+__all__ = [
+    "ColorPalette",
+    "ButtonStyleConfig",
+    "CalendarStyleConfig",
+    "InputStyleConfig",
+    "LayoutConfig",
+    "Theme",
+    "ThemeProvider",
+    "theme_from_mapping",
+    "DEFAULT_THEME",
+]

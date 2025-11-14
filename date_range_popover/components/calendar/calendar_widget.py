@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import calendar
 from enum import Enum, auto
-from typing import Optional, cast
+from typing import cast
 
 from PyQt6.QtCore import QDate, Qt, pyqtSignal
-from PyQt6.QtWidgets import QHBoxLayout, QLabel, QStackedWidget, QVBoxLayout, QWidget, QSizePolicy
+from PyQt6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QStackedWidget, QVBoxLayout, QWidget
 
 from ...exceptions import InvalidDateError
 from ...styles.style_templates import (
@@ -14,17 +14,17 @@ from ...styles.style_templates import (
     mode_label_text_qss,
 )
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
-from ...validation import validate_date_range, validate_qdate
 from ...utils import connect_signal, first_of_month
+from ...validation import validate_date_range, validate_qdate
 from .day_view import CalendarDayView
 from .month_view import CalendarMonthView
 from .navigation import CalendarNavigation
-from .year_view import CalendarYearView
 from .year_range_utils import (
     clamp_year_range_start,
     compute_year_range_start,
     year_range_limits,
 )
+from .year_view import CalendarYearView
 
 
 class CalendarViewMode(Enum):
@@ -60,7 +60,7 @@ class CalendarWidget(QWidget):
                 today_background="#f5f5f5",
                 today_text_color="#1f1f1f",
                 today_underline_color="#1f1f1f",
-            day_hover_background="#2e2e2e",
+                day_hover_background="#2e2e2e",
                 day_hover_text_color="#f5f5f5",
                 nav_icon_color="#dbdbdb",
                 day_label_background="#2e2e2e",
@@ -99,8 +99,8 @@ class CalendarWidget(QWidget):
             grid_columns=self._YEAR_GRID_COLUMNS,
         )
         self._content_stack = QStackedWidget(self)
-        self._mode_label_container: Optional[QWidget] = None
-        self._mode_label: Optional[QLabel] = None
+        self._mode_label_container: QWidget | None = None
+        self._mode_label: QLabel | None = None
 
         self._build_ui()
         self.apply_style(self._style)
@@ -155,8 +155,12 @@ class CalendarWidget(QWidget):
             field_name="selected_range",
             allow_partial=False,
         )
-        self._range_start = self._ensure_within_bounds(cast(QDate, start_candidate), "selected_range.start")
-        self._range_end = self._ensure_within_bounds(cast(QDate, end_candidate), "selected_range.end")
+        self._range_start = self._ensure_within_bounds(
+            cast(QDate, start_candidate), "selected_range.start"
+        )
+        self._range_end = self._ensure_within_bounds(
+            cast(QDate, end_candidate), "selected_range.end"
+        )
         self._refresh_views()
 
     def clear_selected_range(self) -> None:
@@ -450,5 +454,3 @@ class CalendarWidget(QWidget):
 
 
 __all__ = ["CalendarWidget", "CalendarViewMode"]
-
-

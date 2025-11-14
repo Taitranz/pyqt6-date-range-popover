@@ -4,7 +4,7 @@ Helpers for constructing and managing the time entry completer popups.
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt, QStringListModel
+from PyQt6.QtCore import QStringListModel, Qt
 from PyQt6.QtWidgets import QCompleter, QLineEdit, QWidget
 
 from ...styles.style_templates import TimePopupStyle, time_popup_qss
@@ -18,11 +18,7 @@ def generate_time_options(step_minutes: int) -> list[str]:
     """Generate HH:MM strings for the provided minute increment."""
 
     step = max(1, min(step_minutes, 60))
-    return [
-        f"{hour:02d}:{minute:02d}"
-        for hour in range(24)
-        for minute in range(0, 60, step)
-    ]
+    return [f"{hour:02d}:{minute:02d}" for hour in range(24) for minute in range(0, 60, step)]
 
 
 def create_time_completer(
@@ -106,4 +102,3 @@ __all__ = [
     "generate_time_options",
     "show_time_popup",
 ]
-

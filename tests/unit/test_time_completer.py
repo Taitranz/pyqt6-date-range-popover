@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QStringListModel
-from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget
-
 from date_range_popover.components.inputs.time_completer import (
     create_time_completer,
     dismiss_time_popup,
@@ -12,6 +9,8 @@ from date_range_popover.components.inputs.time_completer import (
     show_time_popup,
 )
 from date_range_popover.styles.theme import ColorPalette
+from PyQt6.QtCore import QStringListModel
+from PyQt6.QtWidgets import QApplication, QLineEdit, QWidget
 
 
 def test_generate_time_options_respects_step_bounds() -> None:
@@ -62,4 +61,3 @@ def test_show_and_dismiss_time_popup_toggles_visibility(qapp: QApplication) -> N
     dismiss_time_popup(line_edit)
     qapp.processEvents()
     assert not popup.isVisible()  # type: ignore[union-attr]
-

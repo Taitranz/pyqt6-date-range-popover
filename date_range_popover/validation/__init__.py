@@ -13,5 +13,3 @@ __all__ = [
     "validate_qdate",
     "validate_date_range",
 ]
-
-

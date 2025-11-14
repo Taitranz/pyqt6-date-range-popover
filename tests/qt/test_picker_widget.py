@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import QDate
-from pytestqt.qtbot import QtBot
-
 from date_range_popover.api.config import DatePickerConfig, DateRange
 from date_range_popover.api.picker import DateRangePicker
 from date_range_popover.managers.state_manager import PickerMode
+from PyQt6.QtCore import QDate
+from pytestqt.qtbot import QtBot
 
 
 def test_picker_emits_date_selected_signal(qtbot: QtBot) -> None:
@@ -17,7 +16,9 @@ def test_picker_emits_date_selected_signal(qtbot: QtBot) -> None:
     target = QDate.currentDate().addDays(-2)
 
     with qtbot.waitSignal(picker.date_selected, timeout=1000):
-        picker._state_manager.select_date(target)  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        picker._state_manager.select_date(
+            target
+        )  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
     assert picker.selected_date == target
 
@@ -36,7 +37,9 @@ def test_picker_applies_initial_range_and_mode(qtbot: QtBot) -> None:
     selected = picker.selected_range
     assert selected.start_date == start
     assert selected.end_date == end
-    assert picker._state_manager.state.mode is PickerMode.CUSTOM_RANGE  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    assert (
+        picker._state_manager.state.mode is PickerMode.CUSTOM_RANGE
+    )  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
 
 def test_set_mode_updates_sliding_track(qtbot: QtBot) -> None:
@@ -52,12 +55,16 @@ def test_set_mode_updates_sliding_track(qtbot: QtBot) -> None:
 
     def track_reached() -> bool:
         return (
-            picker._sliding_track.current_position == target_position  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-            and picker._sliding_track.current_width == target_width  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            picker._sliding_track.current_position
+            == target_position  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+            and picker._sliding_track.current_width
+            == target_width  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
         )
 
     qtbot.waitUntil(track_reached, timeout=1500)
-    assert picker._state_manager.state.mode is PickerMode.CUSTOM_RANGE  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    assert (
+        picker._state_manager.state.mode is PickerMode.CUSTOM_RANGE
+    )  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
 
 
 def test_cancel_button_emits_cancelled_signal(qtbot: QtBot) -> None:
@@ -67,4 +74,3 @@ def test_cancel_button_emits_cancelled_signal(qtbot: QtBot) -> None:
 
     with qtbot.waitSignal(picker.cancelled, timeout=1000):
         picker._cancel_button.click()  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-

@@ -122,20 +122,14 @@ def mode_label_container_qss(style: ModeLabelStyle) -> str:
     """QSS for the calendar mode label container."""
 
     return (
-        f"background-color: {style.background};"
-        f"border-radius: {style.radius}px;"
-        "border: none;"
+        f"background-color: {style.background};" f"border-radius: {style.radius}px;" "border: none;"
     )
 
 
 def mode_label_text_qss(style: ModeLabelStyle) -> str:
     """QSS for the calendar mode label text."""
 
-    return (
-        f"color: {style.text_color};"
-        "background-color: transparent;"
-        "border: none;"
-    )
+    return f"color: {style.text_color};" "background-color: transparent;" "border: none;"
 
 
 def divider_qss(color: str) -> str:
@@ -176,9 +170,7 @@ def container_qss(background: str, *, radius: int, border: str | None = None) ->
 
     border_value = border or "none"
     return (
-        f"background-color: {background};"
-        f"border-radius: {radius}px;"
-        f"border: {border_value};"
+        f"background-color: {background};" f"border-radius: {radius}px;" f"border: {border_value};"
     )
 
 
@@ -197,5 +189,3 @@ __all__ = [
     "time_popup_qss",
     "transparent_button_qss",
 ]
-
-

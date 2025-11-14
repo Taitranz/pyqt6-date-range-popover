@@ -38,5 +38,3 @@ class DraggableHeaderStrip(QWidget):
 
 
 __all__ = ["DraggableHeaderStrip"]
-
-

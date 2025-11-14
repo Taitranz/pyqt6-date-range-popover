@@ -1,9 +1,19 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Final, Literal
+from typing import Final, Literal
 
-from PyQt6.QtCore import QCoreApplication, QDate, QEvent, QObject, Qt, QTime, pyqtSignal, QStringListModel
+from PyQt6.QtCore import (
+    QCoreApplication,
+    QDate,
+    QEvent,
+    QObject,
+    QStringListModel,
+    Qt,
+    QTime,
+    pyqtSignal,
+)
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import (
     QApplication,
@@ -26,12 +36,8 @@ from .time_completer import (
 ModeLiteral = Literal["go_to_date", "custom_date_range"]
 GO_TO_DATE: Final[ModeLiteral] = "go_to_date"
 CUSTOM_DATE_RANGE: Final[ModeLiteral] = "custom_date_range"
-CALENDAR_ICON_PATH: Final[Path] = (
-    Path(__file__).resolve().parents[2] / "assets" / "calender.svg"
-)
-CLOCK_ICON_PATH: Final[Path] = (
-    Path(__file__).resolve().parents[2] / "assets" / "clock.svg"
-)
+CALENDAR_ICON_PATH: Final[Path] = Path(__file__).resolve().parents[2] / "assets" / "calender.svg"
+CLOCK_ICON_PATH: Final[Path] = Path(__file__).resolve().parents[2] / "assets" / "clock.svg"
 
 
 class DateTimeSelector(QWidget):
@@ -119,10 +125,15 @@ class DateTimeSelector(QWidget):
             if not self._object_is_within_self(a0) and self._focus_within_self():
                 next_focus_candidate = a0 if isinstance(a0, QWidget) else None
                 self._clear_focus_from_inputs(next_focus_candidate=next_focus_candidate)
-        if target is not None and a1 is not None and a1.type() in {
-            QEvent.Type.FocusIn,
-            QEvent.Type.FocusOut,
-        }:
+        if (
+            target is not None
+            and a1 is not None
+            and a1.type()
+            in {
+                QEvent.Type.FocusIn,
+                QEvent.Type.FocusOut,
+            }
+        ):
             if a1.type() is QEvent.Type.FocusIn:
                 if (
                     self._previously_focused_input is not None
@@ -151,7 +162,9 @@ class DateTimeSelector(QWidget):
 
     def apply_calendar_selection(self, date: QDate) -> None:
         """Apply a calendar-selected date to the most relevant date input."""
-        target = self._last_focused_date_input or (self._date_inputs[0] if self._date_inputs else None)
+        target = self._last_focused_date_input or (
+            self._date_inputs[0] if self._date_inputs else None
+        )
         if target is None:
             return
         was_first_input_focused = (
@@ -224,11 +237,7 @@ class DateTimeSelector(QWidget):
         is_date: bool,
     ) -> InputWithIcon:
         max_length = 10 if is_date else 5
-        regex_pattern = (
-            r"^\d{4}-\d{2}-\d{2}$"
-            if is_date
-            else r"^(?:[01]\d|2[0-3]):[0-5]\d$"
-        )
+        regex_pattern = r"^\d{4}-\d{2}-\d{2}$" if is_date else r"^(?:[01]\d|2[0-3]):[0-5]\d$"
 
         placeholder = "YYYY-MM-DD" if is_date else "HH:MM"
         if width is None:
@@ -346,7 +355,9 @@ class DateTimeSelector(QWidget):
         self._focus_window()
         return True
 
-    def _build_date_time_row(self, *, date_text: str, time_text: str) -> tuple[InputWithIcon, InputWithIcon]:
+    def _build_date_time_row(
+        self, *, date_text: str, time_text: str
+    ) -> tuple[InputWithIcon, InputWithIcon]:
         """Create a row containing paired date/time inputs."""
 
         row_layout = QHBoxLayout()
@@ -406,5 +417,3 @@ __all__ = [
     "GO_TO_DATE",
     "CUSTOM_DATE_RANGE",
 ]
-
-

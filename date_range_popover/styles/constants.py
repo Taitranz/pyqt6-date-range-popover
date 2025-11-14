@@ -2,7 +2,6 @@
 
 from PyQt6.QtGui import QFont
 
-
 ACTION_BUTTON_VERTICAL_PADDING = 12
 
 # Animation
@@ -55,6 +54,3 @@ def create_calendar_day_font() -> QFont:
     font.setWeight(QFont.Weight.Normal)
     font.setLetterSpacing(QFont.SpacingType.PercentageSpacing, 96)
     return font
-
-
-

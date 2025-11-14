@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Final, Optional, Tuple
+from typing import Final
 
 from PyQt6.QtCore import QByteArray, Qt
 from PyQt6.QtGui import QIcon, QPainter, QPixmap
@@ -11,7 +11,7 @@ from PyQt6.QtSvgWidgets import QSvgWidget
 _SVG_COLOR_PLACEHOLDER: Final[str] = "__SVG_COLOR__"
 
 
-def _read_svg_text(path: Path) -> Optional[str]:
+def _read_svg_text(path: Path) -> str | None:
     try:
         return path.read_text(encoding="utf-8")
     except OSError:
@@ -44,7 +44,7 @@ def load_colored_svg_icon(path: str | Path, size: int, color: str) -> QIcon:
     return QIcon(pixmap)
 
 
-def load_svg_widget(path: str | Path, size: int) -> Optional[Tuple[QSvgWidget, str]]:
+def load_svg_widget(path: str | Path, size: int) -> tuple[QSvgWidget, str] | None:
     """Load an SVG widget and return the widget and color template string."""
     svg_path = Path(path)
     try:
@@ -74,5 +74,3 @@ def load_svg_widget(path: str | Path, size: int) -> Optional[Tuple[QSvgWidget, s
 
 
 __all__ = ["load_colored_svg_icon", "load_svg_widget"]
-
-

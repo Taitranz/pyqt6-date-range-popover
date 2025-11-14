@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 from PyQt6.QtCore import QDate, QObject
 
 from ..components.buttons.button_strip import ButtonStrip
 from ..components.calendar.calendar_widget import CalendarWidget
-from ..components.inputs.date_time_selector import CUSTOM_DATE_RANGE, DateTimeSelector, GO_TO_DATE
+from ..components.inputs.date_time_selector import CUSTOM_DATE_RANGE, GO_TO_DATE, DateTimeSelector
 from ..components.layout.sliding_track import SlidingTrackIndicator
 from ..utils import connect_signal, get_logger
 from .state_manager import DatePickerStateManager, PickerMode
@@ -16,6 +17,7 @@ LOGGER = get_logger(__name__)
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..components.buttons.basic_button import BasicButton
+
 
 class DatePickerCoordinator(QObject):
     """
@@ -35,13 +37,13 @@ class DatePickerCoordinator(QObject):
         self._state_manager = state_manager
         self._style_manager = style_manager
 
-        self._button_strip: Optional[ButtonStrip] = None
-        self._calendar: Optional[CalendarWidget] = None
-        self._date_time_selector: Optional[DateTimeSelector] = None
-        self._sliding_track: Optional[SlidingTrackIndicator] = None
+        self._button_strip: ButtonStrip | None = None
+        self._calendar: CalendarWidget | None = None
+        self._date_time_selector: DateTimeSelector | None = None
+        self._sliding_track: SlidingTrackIndicator | None = None
 
         self._pending_range_start: QDate | None = None
-        self._sliding_track_animator: Optional[Callable[[PickerMode], None]] = None
+        self._sliding_track_animator: Callable[[PickerMode], None] | None = None
 
         connect_signal(self._state_manager.mode_changed, self._on_mode_changed)
         connect_signal(self._state_manager.selected_date_changed, self._on_selected_date_changed)
@@ -54,13 +56,9 @@ class DatePickerCoordinator(QObject):
         """Attach the button strip and wire up palette + mode switching."""
         self._button_strip = button_strip
         self._style_manager.apply_button_strip(button_strip)
+        connect_signal(button_strip.date_selected, lambda: self.switch_mode(PickerMode.DATE))
         connect_signal(
-            button_strip.date_selected,
-            lambda: self.switch_mode(PickerMode.DATE)
-        )
-        connect_signal(
-            button_strip.custom_range_selected,
-            lambda: self.switch_mode(PickerMode.CUSTOM_RANGE)
+            button_strip.custom_range_selected, lambda: self.switch_mode(PickerMode.CUSTOM_RANGE)
         )
         self._apply_mode_to_button_strip(self._state_manager.state.mode)
 
@@ -69,7 +67,9 @@ class DatePickerCoordinator(QObject):
         self._calendar = calendar
         self._style_manager.apply_calendar(calendar)
         connect_signal(calendar.date_selected, self.handle_calendar_selection)
-        calendar.set_selected_date(self._state_manager.state.selected_dates[0] or QDate.currentDate())
+        calendar.set_selected_date(
+            self._state_manager.state.selected_dates[0] or QDate.currentDate()
+        )
 
     def register_date_time_selector(self, selector: DateTimeSelector) -> None:
         """Attach the date-time selector and connect validation callbacks."""
@@ -88,7 +88,7 @@ class DatePickerCoordinator(QObject):
         """Provide a callback for animating the sliding track."""
         self._sliding_track_animator = callback
 
-    def apply_basic_button_style(self, button: "BasicButton") -> None:
+    def apply_basic_button_style(self, button: BasicButton) -> None:
         """Apply the default theme styling to an action button."""
         self._style_manager.apply_basic_button(button)
 
@@ -133,12 +133,7 @@ class DatePickerCoordinator(QObject):
                 self._calendar.clear_selected_range()
             else:
                 start, end = self._state_manager.state.selected_dates
-                if (
-                    start is not None
-                    and end is not None
-                    and start.isValid()
-                    and end.isValid()
-                ):
+                if start is not None and end is not None and start.isValid() and end.isValid():
                     self._calendar.set_selected_range(start, end)
                 else:
                     self._calendar.clear_selected_range()
@@ -154,10 +149,7 @@ class DatePickerCoordinator(QObject):
         """Propagate range selection changes to both inputs and calendar."""
         if self._date_time_selector is not None:
             self._date_time_selector.set_range(start, end)
-        if (
-            self._calendar is not None
-            and self._state_manager.state.mode is PickerMode.CUSTOM_RANGE
-        ):
+        if self._calendar is not None and self._state_manager.state.mode is PickerMode.CUSTOM_RANGE:
             self._calendar.set_selected_range(start, end)
 
     def _on_visible_month_changed(self, month: QDate) -> None:
@@ -234,5 +226,3 @@ class DatePickerCoordinator(QObject):
 
 
 __all__ = ["DatePickerCoordinator"]
-
-

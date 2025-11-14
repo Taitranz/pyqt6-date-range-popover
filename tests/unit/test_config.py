@@ -3,12 +3,11 @@
 from __future__ import annotations
 
 import pytest
-from PyQt6.QtCore import QDate, QTime
-
 from date_range_popover.api.config import DatePickerConfig, DateRange
 from date_range_popover.exceptions import InvalidConfigurationError
 from date_range_popover.managers.state_manager import PickerMode
 from date_range_popover.styles.theme import LayoutConfig
+from PyQt6.QtCore import QDate, QTime
 
 
 def test_date_range_orders_dates() -> None:
@@ -71,4 +70,3 @@ def test_config_validates_initial_selection_against_bounds() -> None:
     bad_range = DateRange(start_date=min_date.addDays(-3), end_date=max_date.addDays(1))
     with pytest.raises(InvalidConfigurationError):
         DatePickerConfig(min_date=min_date, max_date=max_date, initial_range=bad_range)
-

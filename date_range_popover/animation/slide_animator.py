@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PyQt6.QtCore import QObject, QTimer
 
 from ..styles.constants import ANIMATION_DURATION_MS, ANIMATION_FRAME_MS
 from ..utils import connect_signal
 
-
 StepCallback = Callable[[int, int], None]
-CompleteCallback = Optional[Callable[[int, int], None]]
+CompleteCallback = Callable[[int, int], None] | None
 
 
 class SlideAnimator(QObject):
@@ -22,7 +21,7 @@ class SlideAnimator(QObject):
         *,
         frame_interval: int = ANIMATION_FRAME_MS,
         duration: int = ANIMATION_DURATION_MS,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ) -> None:
         super().__init__(parent)
         self._frame_interval = frame_interval
@@ -37,7 +36,7 @@ class SlideAnimator(QObject):
         self._target_position = 0
         self._target_width = 0
 
-        self._step_callback: Optional[StepCallback] = None
+        self._step_callback: StepCallback | None = None
         self._complete_callback: CompleteCallback = None
 
     def animate(
@@ -99,5 +98,3 @@ class SlideAnimator(QObject):
     @staticmethod
     def _lerp(start: int, end: int, progress: float) -> int:
         return int(start + (end - start) * progress)
-
-

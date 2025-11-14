@@ -58,8 +58,7 @@ def year_range_limits(
             compute_year_range_start(max_date.year(), span, max_year=max_year),
         )
 
-    if min_start > max_start:
-        min_start = max_start
+    min_start = min(min_start, max_start)
     return min_start, max_start
 
 
@@ -89,4 +88,3 @@ __all__ = [
     "compute_year_range_start",
     "year_range_limits",
 ]
-

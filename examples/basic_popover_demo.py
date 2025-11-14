@@ -10,7 +10,8 @@ and then re-used for the lifetime of the popover.
 from __future__ import annotations
 
 import sys
-from typing import Callable, Protocol, cast
+from collections.abc import Callable
+from typing import Protocol, cast
 
 from PyQt6.QtCore import QDate, Qt
 from PyQt6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
@@ -77,4 +78,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

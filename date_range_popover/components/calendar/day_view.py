@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import calendar
-from typing import Iterable, List
+from collections.abc import Iterable
 
 from PyQt6.QtCore import QDate, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -42,7 +42,7 @@ class CalendarDayView(QWidget):
                 today_background="#f5f5f5",
                 today_text_color="#1f1f1f",
                 today_underline_color="#1f1f1f",
-            day_hover_background="#2e2e2e",
+                day_hover_background="#2e2e2e",
                 day_hover_text_color="#f5f5f5",
                 nav_icon_color="#dbdbdb",
                 day_label_background="#2e2e2e",
@@ -150,9 +150,8 @@ class CalendarDayView(QWidget):
                 and day_date.year() == visible_month.year()
             )
             is_selected: bool = day_date.toJulianDay() == selected_date.toJulianDay()
-            is_disabled = (
-                (min_date is not None and day_date < min_date)
-                or (max_date is not None and day_date > max_date)
+            is_disabled = (min_date is not None and day_date < min_date) or (
+                max_date is not None and day_date > max_date
             )
             day_julian = day_date.toJulianDay()
             is_range_start = start_julian is not None and day_julian == start_julian
@@ -176,7 +175,7 @@ class CalendarDayView(QWidget):
 
     def _weekday_names(self) -> Iterable[str]:
         locale = calendar.LocaleTextCalendar(firstweekday=0)
-        labels: List[str] = []
+        labels: list[str] = []
         for day_index in range(7):
             label = locale.formatweekday(day_index, width=2).strip()
             labels.append(label.capitalize())
@@ -184,5 +183,3 @@ class CalendarDayView(QWidget):
 
 
 __all__ = ["CalendarDayView"]
-
-

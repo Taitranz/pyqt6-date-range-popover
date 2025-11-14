@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Callable, ParamSpec, cast
+from collections.abc import Callable
+from typing import ParamSpec, cast
 
 from ..types.signals import SignalProtocol
 
@@ -23,5 +24,3 @@ def connect_if_present(signal: object | None, slot: Callable[P, None]) -> object
 
 
 __all__ = ["connect_signal", "connect_if_present"]
-
-

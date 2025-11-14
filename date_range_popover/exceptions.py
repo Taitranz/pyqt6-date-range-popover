@@ -25,5 +25,3 @@ __all__ = [
     "InvalidConfigurationError",
     "InvalidThemeError",
 ]
-
-

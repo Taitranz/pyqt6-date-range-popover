@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 from PyQt6.QtWidgets import QWidget
 
 from .api.config import DatePickerConfig
@@ -18,11 +16,16 @@ class DateRangePopover(DateRangePicker):
     demos. Pass a pre-sanitised :class:`DatePickerConfig` so constraints
     (min/max dates, layout bounds, themes) stay explicit at construction
     time.
+
+    Example:
+        >>> popover = DateRangePopover()
+        >>> popover.range_selected.connect(lambda r: print(r.start_date, r.end_date))
+        >>> popover.show()
     """
 
     def __init__(
         self,
-        config: Optional[DatePickerConfig] = None,
+        config: DatePickerConfig | None = None,
         parent: QWidget | None = None,
     ) -> None:
         """
@@ -36,4 +39,3 @@ class DateRangePopover(DateRangePicker):
 
 
 __all__ = ["DateRangePopover"]
-

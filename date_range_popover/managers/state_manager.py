@@ -1,38 +1,25 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, replace
-from enum import Enum, auto
-from typing import Tuple, cast
+from dataclasses import replace
+from typing import cast
 
 from PyQt6.QtCore import QDate, QObject, pyqtSignal
 
+from ..core.state_logic import (
+    DatePickerState,
+    PickerMode,
+    apply_range_selection,
+    apply_single_date,
+    build_initial_state,
+    clamp_visible_month,
+    ensure_within_bounds,
+    switch_mode,
+)
 from ..exceptions import InvalidDateError
+from ..utils import get_logger
 from ..validation import validate_date_range, validate_qdate
-from ..utils import first_of_month, get_logger
 
 LOGGER = get_logger(__name__)
-
-
-class PickerMode(Enum):
-    """Supported picker modes exposed via the public API."""
-
-    DATE = auto()
-    CUSTOM_RANGE = auto()
-
-
-@dataclass(frozen=True, slots=True)
-class DatePickerState:
-    """
-    Immutable snapshot of the picker state.
-
-    Instances are emitted via the ``state_changed`` signal so observers can
-    derive view models without mutating internal structures. All ``QDate``
-    objects are defensive copies to avoid lifetime issues.
-    """
-
-    mode: PickerMode
-    selected_dates: Tuple[QDate | None, QDate | None]
-    visible_month: QDate
 
 
 class DatePickerStateManager(QObject):
@@ -64,14 +51,13 @@ class DatePickerStateManager(QObject):
         super().__init__()
         self._min_date = QDate(min_date) if isinstance(min_date, QDate) else None
         self._max_date = QDate(max_date) if isinstance(max_date, QDate) else None
-        if self._min_date is not None and self._max_date is not None and self._min_date > self._max_date:
+        if (
+            self._min_date is not None
+            and self._max_date is not None
+            and self._min_date > self._max_date
+        ):
             raise InvalidDateError("min_date must be on or before max_date")
-        initial_date = self._default_selection_date()
-        self._state = DatePickerState(
-            mode=PickerMode.DATE,
-            selected_dates=(initial_date, None),
-            visible_month=first_of_month(initial_date),
-        )
+        self._state = build_initial_state(self._min_date, self._max_date)
 
     @property
     def state(self) -> DatePickerState:
@@ -97,7 +83,7 @@ class DatePickerStateManager(QObject):
         if mode is self._state.mode:
             return
         LOGGER.debug("Picker mode change: %s -> %s", self._state.mode.name, mode.name)
-        self._update_state(mode=mode)
+        self._state = switch_mode(self._state, mode)
         self.mode_changed.emit(mode)
         self.state_changed.emit(self._state)
 
@@ -108,15 +94,17 @@ class DatePickerStateManager(QObject):
         :param date: Candidate ``QDate`` (must be valid and within bounds).
         """
         validated = cast(QDate, validate_qdate(date, field_name="selected_date"))
-        validated = self._ensure_within_bounds(validated, "selected_date")
+        validated = ensure_within_bounds(
+            validated,
+            self._min_date,
+            self._max_date,
+            field_name="selected_date",
+        )
         LOGGER.debug("Selecting date: %s", validated.toString("yyyy-MM-dd"))
         current_start, current_end = self._state.selected_dates
         if current_start == validated and current_end is None:
             return
-        self._update_state(
-            selected_dates=(validated, None),
-            visible_month=first_of_month(validated),
-        )
+        self._state = apply_single_date(self._state, validated)
         self.selected_date_changed.emit(validated)
         self.visible_month_changed.emit(self._state.visible_month)
         self.state_changed.emit(self._state)
@@ -136,17 +124,24 @@ class DatePickerStateManager(QObject):
         )
         validated_start = cast(QDate, start_candidate)
         validated_end = cast(QDate, end_candidate)
-        validated_start = self._ensure_within_bounds(validated_start, "selected_range.start")
-        validated_end = self._ensure_within_bounds(validated_end, "selected_range.end")
+        validated_start = ensure_within_bounds(
+            validated_start,
+            self._min_date,
+            self._max_date,
+            field_name="selected_range.start",
+        )
+        validated_end = ensure_within_bounds(
+            validated_end,
+            self._min_date,
+            self._max_date,
+            field_name="selected_range.end",
+        )
         LOGGER.debug(
             "Selecting range: %s -> %s",
             validated_start.toString("yyyy-MM-dd"),
             validated_end.toString("yyyy-MM-dd"),
         )
-        self._update_state(
-            selected_dates=(validated_start, validated_end),
-            visible_month=first_of_month(validated_start),
-        )
+        self._state = apply_range_selection(self._state, validated_start, validated_end)
         self.selected_range_changed.emit(validated_start, validated_end)
         self.visible_month_changed.emit(self._state.visible_month)
         self.state_changed.emit(self._state)
@@ -158,78 +153,29 @@ class DatePickerStateManager(QObject):
         :param month: Any ``QDate`` within the desired month/year.
         """
         validated_month = cast(QDate, validate_qdate(month, field_name="visible_month"))
-        target = self._clamp_visible_month(validated_month)
+        target = clamp_visible_month(validated_month, self._min_date, self._max_date)
         LOGGER.debug("Updating visible month to %s", target.toString("yyyy-MM"))
         if target == self._state.visible_month:
             return
-        self._update_state(visible_month=target)
+        self._state = replace(self._state, visible_month=target)
         self.visible_month_changed.emit(target)
         self.state_changed.emit(self._state)
 
     def reset(self) -> None:
         """Reset the internal state to today's date in ``DATE`` mode."""
-        default_date = self._default_selection_date()
-        LOGGER.debug("Resetting picker state to %s", default_date.toString("yyyy-MM-dd"))
-        self._update_state(
-            mode=PickerMode.DATE,
-            selected_dates=(default_date, None),
-            visible_month=first_of_month(default_date),
+        previous_mode = self._state.mode
+        self._state = build_initial_state(self._min_date, self._max_date)
+        start_date, _ = self._state.selected_dates
+        LOGGER.debug(
+            "Resetting picker state to %s",
+            start_date.toString("yyyy-MM-dd") if start_date is not None else "N/A",
         )
-        self.mode_changed.emit(self._state.mode)
-        self.selected_date_changed.emit(default_date)
+        if self._state.mode is not previous_mode:
+            self.mode_changed.emit(self._state.mode)
+        if start_date is not None:
+            self.selected_date_changed.emit(start_date)
         self.visible_month_changed.emit(self._state.visible_month)
         self.state_changed.emit(self._state)
 
-    def _update_state(
-        self,
-        *,
-        mode: PickerMode | None = None,
-        selected_dates: Tuple[QDate | None, QDate | None] | None = None,
-        visible_month: QDate | None = None,
-    ) -> None:
-        """Replace the immutable state with a new instance."""
-        new_state = replace(
-            self._state,
-            mode=mode if mode is not None else self._state.mode,
-            selected_dates=selected_dates if selected_dates is not None else self._state.selected_dates,
-            visible_month=visible_month if visible_month is not None else self._state.visible_month,
-        )
-        self._state = new_state
-
-    def _default_selection_date(self) -> QDate:
-        """Return today's date clamped to the configured bounds."""
-        return self._clamp_to_bounds(QDate.currentDate())
-
-    def _ensure_within_bounds(self, date: QDate, field_name: str) -> QDate:
-        """Validate that ``date`` sits within the configured bounds."""
-        if self._min_date is not None and date < self._min_date:
-            raise InvalidDateError(f"{field_name} must be on or after the configured min_date")
-        if self._max_date is not None and date > self._max_date:
-            raise InvalidDateError(f"{field_name} must be on or before the configured max_date")
-        return date
-
-    def _clamp_to_bounds(self, date: QDate) -> QDate:
-        """Clamp ``date`` to ``min_date``/``max_date`` without raising."""
-        result = QDate(date)
-        if self._min_date is not None and result < self._min_date:
-            result = QDate(self._min_date)
-        if self._max_date is not None and result > self._max_date:
-            result = QDate(self._max_date)
-        return result
-
-    def _clamp_visible_month(self, month: QDate) -> QDate:
-        """Clamp a month to the allowed range (first-of-month resolution)."""
-        target = first_of_month(month)
-        if self._min_date is not None:
-            min_month = first_of_month(self._min_date)
-            if target < min_month:
-                return min_month
-        if self._max_date is not None:
-            max_month = first_of_month(self._max_date)
-            if target > max_month:
-                return max_month
-        return target
 
 __all__ = ["DatePickerStateManager", "DatePickerState", "PickerMode"]
-
-

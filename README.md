@@ -1,5 +1,9 @@
 # Date Range Popover
 
+[![CI](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml/badge.svg)](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml)
+![Coverage](https://img.shields.io/badge/coverage-90%25%2B-brightgreen)
+![Python](https://img.shields.io/badge/python-3.10--3.13-blue)
+
 I built this PyQt6 popover because I wanted a compact date and range picker I could drop into desktop tools without rewriting the same scaffolding each time.
 
 ## What you get
@@ -45,13 +49,14 @@ That script opens a centered popover, prints selected dates/ranges to stdout, an
 
 ```bash
 pip install -e .[test]
-pytest --maxfail=1 --disable-warnings --cov=date_range_popover
+pytest --maxfail=1 --disable-warnings --cov=date_range_popover --cov-report=term-missing --cov-report=xml --cov-report=html
 ```
 
 - `pytest.ini` keeps discovery strict (`testpaths`, strict markers) so widget regressions surface quickly.
 - `tests/conftest.py` forces `QT_QPA_PLATFORM=offscreen` before Qt spins up, so the suite runs fine without an X server.
 - `pytest-qt` drives widget-level tests via the built-in `qtbot` fixture while session-scoped `QApplication` setup also lives in `tests/conftest.py`.
-- CI or local scripts can reuse the same command; coverage is optional but helpful for spotting regressions in the state manager/validation helpers.
+- Coverage reports are generated in both XML (`coverage.xml`) and HTML (`htmlcov/index.html`), so CI and humans can audit regressions quickly.
+- The coverage config enforces `fail_under=90`, ensuring the suite exercises the vast majority of the codebase.
 
 ## Validation helpers & coverage
 
@@ -139,6 +144,29 @@ The metadata already lists the license, authorship, and dependencies, so those c
 ### Maintenance
 
 This is a side project I built for my own tools, and my schedule is pretty full, so I do not expect to actively iterate on it. I may occasionally fix critical issues, but you should treat the API and behavior as "use at your own risk" and feel free to fork if you need faster changes. Some may recognise the design 😂.
+
+## Documentation
+
+The MkDocs site mirrors the architecture notes, embedding guide, API reference,
+and extension hooks.
+
+```bash
+pip install -e ".[docs]"
+mkdocs serve  # open http://127.0.0.1:8000
+```
+
+Highlights:
+
+- [`docs/index.md`](docs/index.md) – overview + quick start
+- [`docs/architecture.md`](docs/architecture.md) – state manager, theming, performance
+- [`docs/extending.md`](docs/extending.md) – theming + callback hooks
+- [`docs/api/public_api.md`](docs/api/public_api.md) – stability contract
+- [`docs/roadmap.md`](docs/roadmap.md) – upcoming work & design bets
+
+## Contributing
+
+Contributions are welcome! See [`CONTRIBUTING.md`](CONTRIBUTING.md) for setup
+instructions, quality gates (ruff/black/mypy/pytest), and PR guidelines.
 
 ## License
 

@@ -3,11 +3,12 @@ from __future__ import annotations
 from typing import Any, Literal
 
 from .theme import (
+    DEFAULT_THEME,
     ButtonStyleConfig,
     CalendarStyleConfig,
-    DEFAULT_THEME,
     InputStyleConfig,
     Theme,
+    ThemeProvider,
 )
 
 ComponentType = Literal["button", "calendar", "input"]
@@ -30,9 +31,10 @@ class StyleRegistry:
     CALENDAR_DEFAULT = "default"
     INPUT_DEFAULT = "default"
 
-    def __init__(self, theme: Theme | None = None) -> None:
-        """Build lookup tables using the provided :class:`Theme`."""
-        self._theme = theme or DEFAULT_THEME
+    def __init__(self, theme: Theme | ThemeProvider | None = None) -> None:
+        """Build lookup tables using the provided :class:`Theme` or provider."""
+        candidate = theme or DEFAULT_THEME
+        self._theme = candidate.build_theme() if isinstance(candidate, ThemeProvider) else candidate
         palette = self._theme.palette
         layout = self._theme.layout
 
@@ -151,6 +153,10 @@ class StyleRegistry:
         except KeyError as exc:
             raise KeyError(f"Unknown button style variant: {variant}") from exc
 
+    def register_button_style(self, name: str, config: ButtonStyleConfig) -> None:
+        """Register or overwrite a named button style."""
+        self.BUTTON_STYLES[name] = config
+
     def button_stylesheet(
         self,
         *,
@@ -170,6 +176,10 @@ class StyleRegistry:
         except KeyError as exc:
             raise KeyError(f"Unknown calendar style variant: {variant}") from exc
 
+    def register_calendar_style(self, name: str, config: CalendarStyleConfig) -> None:
+        """Register or overwrite a named calendar style."""
+        self.CALENDAR_STYLES[name] = config
+
     def calendar_stylesheet(self, *, variant: str = CALENDAR_DEFAULT) -> str:
         """Render a simple background stylesheet for calendar containers."""
         config = self.calendar_config(variant)
@@ -184,6 +194,10 @@ class StyleRegistry:
         except KeyError as exc:
             raise KeyError(f"Unknown input style variant: {variant}") from exc
 
+    def register_input_style(self, name: str, config: InputStyleConfig) -> None:
+        """Register or overwrite an input style variant."""
+        self.INPUT_STYLES[name] = config
+
     def input_stylesheet(self, *, variant: str = INPUT_DEFAULT) -> str:
         """Render a minimal stylesheet for icon-enabled inputs."""
         config = self.input_config(variant)
@@ -192,5 +206,3 @@ class StyleRegistry:
             f"border: 1px solid {config.border_default};"
             "border-radius: 6px;"
         )
-
-

@@ -7,7 +7,7 @@ name = "valgo-date-range-popover"
 version = "0.1.0"
 description = "Reusable PyQt6 date range popover component."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.10"
 license = { file = "LICENSE" }
 authors = [
     { name = "Taitranz" },
@@ -19,6 +19,8 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Software Development :: User Interfaces",
@@ -33,6 +35,18 @@ test = [
     "pytest-qt>=4.3",
     "pytest-cov>=4.1",
     "pytest-env>=0.6",
+    "hypothesis>=6.92",
+    "mypy>=1.10",
+]
+dev = [
+    "black>=24.4",
+    "ruff>=0.6",
+    "mypy>=1.10",
+]
+docs = [
+    "mkdocs>=1.6",
+    "mkdocs-material>=9.5",
+    "mkdocstrings[python]>=0.25",
 ]
 
 [project.urls]
@@ -54,4 +68,50 @@ include = [
     "LICENSE",
     "pyproject.toml",
 ]
+
+[tool.mypy]
+files = ["date_range_popover"]
+python_version = "3.10"
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["PyQt6.*"]
+ignore_missing_imports = true
+
+[tool.black]
+line-length = 100
+target-version = ["py310"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["date_range_popover", "tests", "examples"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP"]
+ignore = ["E203"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+
+[tool.coverage.run]
+branch = true
+source = ["date_range_popover"]
+dynamic_context = "test_function"
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_empty = true
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"
 
