@@ -43,6 +43,7 @@ class StyleManager:
 
     def apply_button_strip(self, button_strip: "ButtonStrip") -> None:
         button_strip.apply_palette(self.theme.palette)
+        button_strip.apply_layout(self.theme.layout)
 
     def apply_calendar(self, calendar: "CalendarWidget", *, variant: str | None = None) -> None:
         target_variant = variant or self._registry.CALENDAR_DEFAULT
@@ -56,6 +57,7 @@ class StyleManager:
 
     def apply_sliding_track(self, sliding_track: "SlidingTrackIndicator") -> None:
         sliding_track.apply_palette(self.theme.palette)
+        sliding_track.apply_layout(self.theme.layout)
 
     def apply_header(self, header: "DraggableHeaderStrip") -> None:
         header.apply_palette(self.theme.palette)

@@ -2,12 +2,15 @@ from __future__ import annotations
 
 import calendar
 from enum import Enum, auto
-from typing import Callable, Optional, Protocol, cast
+from typing import Optional, cast
 
 from PyQt6.QtCore import QDate, Qt, pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QStackedWidget, QVBoxLayout, QWidget, QSizePolicy
 
+from ...exceptions import InvalidDateError
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
+from ...validation import validate_date_range, validate_qdate
+from ...utils import connect_signal
 from .day_view import CalendarDayView
 from .month_view import CalendarMonthView
 from .navigation import CalendarNavigation
@@ -62,9 +65,9 @@ class CalendarWidget(QWidget):
         self._style = style
         self._layout_config = layout or LayoutConfig()
 
-        self._today = QDate.currentDate()
-        self._selected_date = self._today
-        self._visible_month = QDate(self._today.year(), self._today.month(), 1)
+        self._today: QDate = QDate.currentDate()
+        self._selected_date: QDate = self._today
+        self._visible_month: QDate = QDate(self._today.year(), self._today.month(), 1)
         self._view_mode: CalendarViewMode = CalendarViewMode.DAY
         self._range_start: QDate | None = None
         self._range_end: QDate | None = None
@@ -108,22 +111,25 @@ class CalendarWidget(QWidget):
             )
 
     def set_selected_date(self, date: QDate) -> None:
-        if not date.isValid():
-            return
-        if date.year() < 1 or date.year() > self._MAX_YEAR:
-            return
-        self._selected_date = date
-        self._visible_month = QDate(date.year(), date.month(), 1)
-        self._ensure_year_range_contains(date.year())
+        """Set the selected date and make it visible."""
+        validated = cast(QDate, validate_qdate(date, field_name="selected_date"))
+        if validated.year() < 1 or validated.year() > self._MAX_YEAR:
+            raise InvalidDateError(f"selected_date must fall between years 1 and {self._MAX_YEAR}")
+        self._selected_date = validated
+        self._visible_month = QDate(validated.year(), validated.month(), 1)
+        self._ensure_year_range_contains(validated.year())
         self._switch_view(CalendarViewMode.DAY)
 
     def set_selected_range(self, start: QDate, end: QDate) -> None:
-        if not start.isValid() or not end.isValid():
-            return
-        if start > end:
-            start, end = end, start
-        self._range_start = start
-        self._range_end = end
+        """Set the highlighted date range."""
+        start_candidate, end_candidate = validate_date_range(
+            start,
+            end,
+            field_name="selected_range",
+            allow_partial=False,
+        )
+        self._range_start = cast(QDate, start_candidate)
+        self._range_end = cast(QDate, end_candidate)
         if self._view_mode is CalendarViewMode.DAY:
             self._day_view.update_days(
                 visible_month=self._visible_month,
@@ -134,6 +140,7 @@ class CalendarWidget(QWidget):
             )
 
     def clear_selected_range(self) -> None:
+        """Clear any highlighted range selection."""
         if self._range_start is None and self._range_end is None:
             return
         self._range_start = None
@@ -148,9 +155,9 @@ class CalendarWidget(QWidget):
             )
 
     def set_visible_month(self, month: QDate) -> None:
-        if not month.isValid():
-            return
-        target = QDate(month.year(), month.month(), 1)
+        """Change the month currently rendered by the widget."""
+        validated = cast(QDate, validate_qdate(month, field_name="visible_month"))
+        target = QDate(validated.year(), validated.month(), 1)
         if target == self._visible_month:
             return
         self._visible_month = target
@@ -210,12 +217,12 @@ class CalendarWidget(QWidget):
         self._content_stack.addWidget(self._month_view)
         self._content_stack.addWidget(self._year_view)
 
-        cast(_VoidSignal, self._navigation.previous_clicked).connect(self._on_previous_clicked)
-        cast(_VoidSignal, self._navigation.next_clicked).connect(self._on_next_clicked)
-        cast(_VoidSignal, self._navigation.header_clicked).connect(self._on_header_clicked)
-        cast(_DateSignal, self._day_view.day_selected).connect(self._on_day_selected)
-        cast(_IntSignal, self._month_view.month_selected).connect(self._on_month_selected)
-        cast(_IntSignal, self._year_view.year_selected).connect(self._on_year_selected)
+        connect_signal(self._navigation.previous_clicked, self._on_previous_clicked)
+        connect_signal(self._navigation.next_clicked, self._on_next_clicked)
+        connect_signal(self._navigation.header_clicked, self._on_header_clicked)
+        connect_signal(self._day_view.day_selected, self._on_day_selected)
+        connect_signal(self._month_view.month_selected, self._on_month_selected)
+        connect_signal(self._year_view.year_selected, self._on_year_selected)
 
     def _on_day_selected(self, date: QDate) -> None:
         self._selected_date = date
@@ -384,18 +391,6 @@ class CalendarWidget(QWidget):
         if base > max_start:
             base = max_start
         return base
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
-
-
-class _DateSignal(Protocol):
-    def connect(self, slot: Callable[[QDate], None]) -> object: ...
-
-
-class _IntSignal(Protocol):
-    def connect(self, slot: Callable[[int], None]) -> object: ...
 
 
 __all__ = ["CalendarWidget", "CalendarViewMode"]

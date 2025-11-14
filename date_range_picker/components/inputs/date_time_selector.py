@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Final, Literal, Protocol, cast
+from typing import Callable, Final, Literal
 
 from PyQt6.QtCore import QDate, QEvent, QObject, Qt, pyqtSignal, QStringListModel
 from PyQt6.QtGui import QMouseEvent
@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ...styles.theme import ColorPalette
+from ...utils import connect_signal
 from .input_with_icon import InputWithIcon
 
 ModeLiteral = Literal["go_to_date", "custom_date_range"]
@@ -26,10 +27,6 @@ CALENDAR_ICON_PATH: Final[Path] = (
 CLOCK_ICON_PATH: Final[Path] = (
     Path(__file__).resolve().parents[2] / "assets" / "clock.svg"
 )
-
-
-class _StrSignal(Protocol):
-    def connect(self, slot: Callable[[str], None]) -> object: ...
 
 
 class DateTimeSelector(QWidget):
@@ -264,8 +261,7 @@ class DateTimeSelector(QWidget):
         self._date_inputs.append(input_with_icon)
         handler = self._make_date_input_handler(input_with_icon)
         self._date_input_handlers[input_with_icon] = handler
-        text_signal = cast(_StrSignal, input_with_icon.input.textChanged)
-        text_signal.connect(handler)
+        connect_signal(input_with_icon.input.textChanged, handler)
 
     def _register_time_input(self, input_with_icon: InputWithIcon) -> None:
         self._time_inputs.append(input_with_icon)

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import calendar
 
-from typing import Callable, Protocol, cast
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -12,8 +11,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ...exceptions import InvalidDateError
 from ...styles import constants
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
+from ...utils import connect_signal
 
 
 class CalendarMonthView(QWidget):
@@ -73,7 +74,7 @@ class CalendarMonthView(QWidget):
             button.setFixedWidth(86)
             button.setFixedHeight(self._layout_config.calendar_day_cell_size)
             button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            cast(_VoidSignal, button.clicked).connect(self._make_handler(index))
+            connect_signal(button.clicked, self._make_handler(index))
             row = (index - 1) // 3
             column = (index - 1) % 3
             grid_layout.addWidget(button, row, column)
@@ -91,7 +92,7 @@ class CalendarMonthView(QWidget):
 
     def set_selected_month(self, month: int) -> None:
         if month < 1 or month > 12:
-            return
+            raise InvalidDateError("month must be between 1 and 12")
         if self._selected_month == month:
             return
         self._selected_month = month
@@ -142,10 +143,6 @@ class CalendarMonthView(QWidget):
             self.month_selected.emit(month)
 
         return handler
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
 
 
 __all__ = ["CalendarMonthView"]

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import calendar
-from typing import Callable, Iterable, List, Protocol, cast
+from typing import Iterable, List
 
 from PyQt6.QtCore import QDate, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 
 from ...styles import constants
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
+from ...utils import connect_signal, iter_month_days
 from .day_cell import CalendarDayCell
 
 
@@ -97,7 +98,7 @@ class CalendarDayView(QWidget):
                 style=self._style,
                 layout=self._layout_config,
             )
-            cast(_DateSignal, cell.clicked).connect(self.day_selected.emit)
+            connect_signal(cell.clicked, self.day_selected.emit)
             row = index // 7
             column = index % 7
             grid_layout.addWidget(cell, row, column, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -131,10 +132,6 @@ class CalendarDayView(QWidget):
         range_start: QDate | None = None,
         range_end: QDate | None = None,
     ) -> None:
-        month_start = QDate(visible_month.year(), visible_month.month(), 1)
-        start_offset = (month_start.dayOfWeek() - 1) % 7
-        start_date = month_start.addDays(-start_offset)
-
         start_julian: int | None = None
         end_julian: int | None = None
         if range_start is not None and range_start.isValid():
@@ -144,8 +141,8 @@ class CalendarDayView(QWidget):
         if start_julian is not None and end_julian is not None and start_julian > end_julian:
             start_julian, end_julian = end_julian, start_julian
 
-        for index, cell in enumerate(self._cells):
-            day_date = start_date.addDays(index)
+        for index, day_date in enumerate(iter_month_days(visible_month)):
+            cell = self._cells[index]
             in_current_month = (
                 day_date.month() == visible_month.month()
                 and day_date.year() == visible_month.year()
@@ -179,10 +176,6 @@ class CalendarDayView(QWidget):
             label = locale.formatweekday(day_index, width=2).strip()
             labels.append(label.capitalize())
         return labels
-
-
-class _DateSignal(Protocol):
-    def connect(self, slot: Callable[[QDate], None]) -> object: ...
 
 
 __all__ = ["CalendarDayView"]

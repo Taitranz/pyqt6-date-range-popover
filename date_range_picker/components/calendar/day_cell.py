@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from typing import Callable, Protocol, cast
 
 from PyQt6.QtCore import QDate, Qt, pyqtSignal, QEvent, QObject
 from PyQt6.QtGui import QResizeEvent
@@ -8,6 +7,7 @@ from PyQt6.QtWidgets import QPushButton, QSizePolicy, QWidget
 
 from ...styles import constants
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
+from ...utils import connect_signal
 
 
 class CalendarDayCell(QWidget):
@@ -51,7 +51,7 @@ class CalendarDayCell(QWidget):
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self._position_elements()
-        cast(_VoidSignal, self._button.clicked).connect(self._on_clicked)
+        connect_signal(self._button.clicked, self._on_clicked)
 
         if self._style is not None:
             self.apply_style(self._style)
@@ -223,10 +223,6 @@ class CalendarDayCell(QWidget):
             f"border-radius: {radius}px;"
         )
         self._underline.show()
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
 
 
 __all__ = ["CalendarDayCell"]

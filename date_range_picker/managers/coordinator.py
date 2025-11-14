@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Callable, Optional, Protocol, cast
+from typing import TYPE_CHECKING, Callable, Optional
 
 from PyQt6.QtCore import QDate, QObject
 
@@ -8,9 +8,11 @@ from ..components.buttons.button_strip import ButtonStrip
 from ..components.calendar.calendar_widget import CalendarWidget
 from ..components.inputs.date_time_selector import CUSTOM_DATE_RANGE, DateTimeSelector, GO_TO_DATE
 from ..components.layout.sliding_track import SlidingTrackIndicator
-from ..styles import constants
+from ..utils import connect_signal, get_logger
 from .state_manager import DatePickerStateManager, PickerMode
 from .style_manager import StyleManager
+
+LOGGER = get_logger(__name__)
 
 if TYPE_CHECKING:  # pragma: no cover
     from ..components.buttons.basic_button import BasicButton
@@ -35,56 +37,70 @@ class DatePickerCoordinator(QObject):
         self._pending_range_start: QDate | None = None
         self._sliding_track_animator: Optional[Callable[[PickerMode], None]] = None
 
-        cast(_ModeSignal, self._state_manager.mode_changed).connect(self._on_mode_changed)
-        cast(_DateSignal, self._state_manager.selected_date_changed).connect(self._on_selected_date_changed)
-        cast(_RangeSignal, self._state_manager.selected_range_changed).connect(self._on_selected_range_changed)
-        cast(_DateSignal, self._state_manager.visible_month_changed).connect(self._on_visible_month_changed)
+        connect_signal(self._state_manager.mode_changed, self._on_mode_changed)
+        connect_signal(self._state_manager.selected_date_changed, self._on_selected_date_changed)
+        connect_signal(self._state_manager.selected_range_changed, self._on_selected_range_changed)
+        connect_signal(self._state_manager.visible_month_changed, self._on_visible_month_changed)
 
     # Registration helpers ----------------------------------------------------------
 
     def register_button_strip(self, button_strip: ButtonStrip) -> None:
+        """Attach the button strip and wire up palette + mode switching."""
         self._button_strip = button_strip
         self._style_manager.apply_button_strip(button_strip)
-        cast(_VoidSignal, button_strip.date_selected).connect(
+        connect_signal(
+            button_strip.date_selected,
             lambda: self.switch_mode(PickerMode.DATE)
         )
-        cast(_VoidSignal, button_strip.custom_range_selected).connect(
+        connect_signal(
+            button_strip.custom_range_selected,
             lambda: self.switch_mode(PickerMode.CUSTOM_RANGE)
         )
         self._apply_mode_to_button_strip(self._state_manager.state.mode)
 
     def register_calendar(self, calendar: CalendarWidget) -> None:
+        """Attach the calendar widget and synchronize initial selection."""
         self._calendar = calendar
         self._style_manager.apply_calendar(calendar)
-        cast(_DateSignal, calendar.date_selected).connect(self.handle_calendar_selection)
+        connect_signal(calendar.date_selected, self.handle_calendar_selection)
         calendar.set_selected_date(self._state_manager.state.selected_dates[0] or QDate.currentDate())
 
     def register_date_time_selector(self, selector: DateTimeSelector) -> None:
+        """Attach the date-time selector and connect validation callbacks."""
         self._date_time_selector = selector
         selector.apply_palette(self._style_manager.theme.palette)
-        cast(_DateSignal, selector.date_input_valid).connect(self._on_date_input_valid)
+        connect_signal(selector.date_input_valid, self._on_date_input_valid)
         self._apply_mode_to_date_time_selector(self._state_manager.state.mode)
 
     def register_sliding_track(self, sliding_track: SlidingTrackIndicator) -> None:
+        """Attach the sliding track indicator and style it."""
         self._sliding_track = sliding_track
         self._style_manager.apply_sliding_track(sliding_track)
         self._update_sliding_track(self._state_manager.state.mode)
 
     def set_sliding_track_animator(self, callback: Callable[[PickerMode], None]) -> None:
+        """Provide a callback for animating the sliding track."""
         self._sliding_track_animator = callback
 
     def apply_basic_button_style(self, button: "BasicButton") -> None:
+        """Apply the default theme styling to an action button."""
         self._style_manager.apply_basic_button(button)
 
     # Coordination methods ----------------------------------------------------------
 
     def select_date(self, date: QDate) -> None:
+        """Proxy to the state manager's ``select_date`` method."""
+        LOGGER.debug("Coordinator selecting date %s", date.toString("yyyy-MM-dd"))
         self._state_manager.select_date(date)
 
     def switch_mode(self, mode: PickerMode) -> None:
+        """Switch the picker mode via the state manager."""
+        LOGGER.debug("Coordinator switching mode to %s", mode.name)
         self._state_manager.set_mode(mode)
 
     def handle_calendar_selection(self, date: QDate) -> None:
+        """Handle a date emitted by the calendar widget."""
+        LOGGER.debug("Calendar emitted selection %s", date.toString("yyyy-MM-dd"))
         current_mode = self._state_manager.state.mode
         if current_mode is PickerMode.DATE:
             self._pending_range_start = None
@@ -189,33 +205,18 @@ class DatePickerCoordinator(QObject):
         if self._sliding_track_animator is not None:
             self._sliding_track_animator(mode)
             return
+        layout_cfg = self._style_manager.theme.layout
         if mode is PickerMode.DATE:
             self._sliding_track.set_state(
                 position=0,
-                width=constants.DATE_INDICATOR_WIDTH,
+                width=layout_cfg.date_indicator_width,
             )
         else:
-            position = constants.DATE_INDICATOR_WIDTH + constants.BUTTON_GAP
+            position = layout_cfg.date_indicator_width + layout_cfg.button_gap
             self._sliding_track.set_state(
                 position=position,
-                width=constants.CUSTOM_RANGE_INDICATOR_WIDTH,
+                width=layout_cfg.custom_range_indicator_width,
             )
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
-
-
-class _DateSignal(Protocol):
-    def connect(self, slot: Callable[[QDate], None]) -> object: ...
-
-
-class _RangeSignal(Protocol):
-    def connect(self, slot: Callable[[QDate, QDate], None]) -> object: ...
-
-
-class _ModeSignal(Protocol):
-    def connect(self, slot: Callable[[PickerMode], None]) -> object: ...
 
 
 __all__ = ["DatePickerCoordinator"]

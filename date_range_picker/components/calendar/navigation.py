@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from typing import Callable, Protocol, cast
 
 from PyQt6.QtCore import Qt, QSize, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -14,6 +13,7 @@ from PyQt6.QtWidgets import (
 
 from ...styles import constants
 from ...styles.theme import CalendarStyleConfig
+from ...utils import connect_signal
 from ...utils.svg_loader import load_colored_svg_icon
 
 NAV_LEFT_ICON_PATH = Path(__file__).resolve().parents[2] / "assets" / "carrot_left.svg"
@@ -73,9 +73,9 @@ class CalendarNavigation(QWidget):
         layout.addStretch()
         layout.addWidget(self._next_button, alignment=Qt.AlignmentFlag.AlignRight)
 
-        cast(_VoidSignal, self._previous_button.clicked).connect(self.previous_clicked.emit)
-        cast(_VoidSignal, self._next_button.clicked).connect(self.next_clicked.emit)
-        cast(_VoidSignal, self._header_button.clicked).connect(self.header_clicked.emit)
+        connect_signal(self._previous_button.clicked, self.previous_clicked.emit)
+        connect_signal(self._next_button.clicked, self.next_clicked.emit)
+        connect_signal(self._header_button.clicked, self.header_clicked.emit)
 
         self.apply_style(self._style)
 
@@ -156,10 +156,6 @@ class CalendarNavigation(QWidget):
         button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         button.setFont(constants.create_calendar_header_font())
         return button
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
 
 
 __all__ = ["CalendarNavigation"]

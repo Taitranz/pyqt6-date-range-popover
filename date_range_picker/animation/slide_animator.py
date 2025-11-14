@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Protocol, cast
+from typing import Callable, Optional
 
 from PyQt6.QtCore import QObject, QTimer
 
 from ..styles.constants import ANIMATION_DURATION_MS, ANIMATION_FRAME_MS
+from ..utils import connect_signal
 
 
 StepCallback = Callable[[int, int], None]
@@ -28,7 +29,7 @@ class SlideAnimator(QObject):
         self._duration = max(duration, frame_interval)
 
         self._timer = QTimer(self)
-        cast(_VoidSignal, self._timer.timeout).connect(self._on_timeout)
+        connect_signal(self._timer.timeout, self._on_timeout)
 
         self._elapsed = 0
         self._start_position = 0
@@ -98,9 +99,5 @@ class SlideAnimator(QObject):
     @staticmethod
     def _lerp(start: int, end: int, progress: float) -> int:
         return int(start + (end - start) * progress)
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
 
 

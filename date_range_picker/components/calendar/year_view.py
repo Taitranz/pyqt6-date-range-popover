@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Callable, Protocol, cast
-
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
@@ -10,8 +8,10 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from ...exceptions import InvalidDateError
 from ...styles import constants
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
+from ...utils import connect_signal
 
 
 class CalendarYearView(QWidget):
@@ -70,7 +70,7 @@ class CalendarYearView(QWidget):
             button.setFixedWidth(64)
             button.setFixedHeight(self._layout_config.calendar_day_cell_size)
             button.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-            cast(_VoidSignal, button.clicked).connect(self._make_handler(button))
+            connect_signal(button.clicked, self._make_handler(button))
             row = index // self._grid_columns
             column = index % self._grid_columns
             grid_layout.addWidget(button, row, column)
@@ -86,6 +86,8 @@ class CalendarYearView(QWidget):
         self._refresh_button_styles()
 
     def set_year_range(self, start_year: int, *, current_year: int) -> None:
+        if start_year < 1 or current_year < 1:
+            raise InvalidDateError("Years must be positive integers")
         self._range_start = start_year
         self._current_year = current_year
         for offset, button in enumerate(self._buttons):
@@ -143,10 +145,6 @@ class CalendarYearView(QWidget):
             self.year_selected.emit(year_value)
 
         return handler
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
 
 
 __all__ = ["CalendarYearView"]

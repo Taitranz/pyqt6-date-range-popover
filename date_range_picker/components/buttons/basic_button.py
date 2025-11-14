@@ -5,6 +5,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QPushButton, QSizePolicy, QWidget
 
 from ...styles import constants
+from ...styles.theme import LayoutConfig
 
 
 class BasicButton(QPushButton):
@@ -17,8 +18,11 @@ class BasicButton(QPushButton):
         label: str = "Done",
         width: int | None = None,
         height: int | None = None,
+        layout: LayoutConfig | None = None,
     ) -> None:
         super().__init__(label, parent)
+
+        self._layout_config = layout or LayoutConfig()
 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -33,7 +37,7 @@ class BasicButton(QPushButton):
             self.setFixedWidth(width)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
-        final_height = height if height is not None else constants.ACTION_BUTTON_HEIGHT
+        final_height = height if height is not None else self._layout_config.action_button_height
         self.setFixedHeight(final_height)
         self._vertical_padding = self._compute_vertical_padding(final_height)
 
@@ -53,5 +57,3 @@ class BasicButton(QPushButton):
 
 
 __all__ = ["BasicButton"]
-
-

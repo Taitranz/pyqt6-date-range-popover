@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable, Optional, Protocol, cast
+from typing import Optional
 
 from PyQt6.QtCore import QDate, QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
@@ -24,8 +24,11 @@ from ..managers.state_manager import DatePickerStateManager, PickerMode
 from ..managers.style_manager import StyleManager
 from ..styles import constants
 from ..styles.style_registry import StyleRegistry
+from ..utils import connect_signal, get_logger
 from ..utils.svg_loader import load_colored_svg_icon
 from .config import DatePickerConfig, DateRange
+
+LOGGER = get_logger(__name__)
 
 CLOSE_ICON_PATH = Path(__file__).resolve().parents[1] / "assets" / "cross.svg"
 
@@ -48,19 +51,24 @@ class DateRangePicker(QWidget):
 
         registry = StyleRegistry(self._config.theme)
         self._style_manager = StyleManager(registry)
+        self._layout_config = self._config.theme.layout
         self._state_manager = DatePickerStateManager()
         self._coordinator = DatePickerCoordinator(self._state_manager, self._style_manager)
         self._animator = SlideAnimator(parent=self)
         self._current_track_position = 0
-        self._current_track_width = constants.DATE_INDICATOR_WIDTH
+        self._current_track_width = self._layout_config.date_indicator_width
 
         self._header_strip = DraggableHeaderStrip(self, palette=self._style_manager.theme.palette)
-        self._button_strip = ButtonStrip(self)
-        self._sliding_track = SlidingTrackIndicator(self, palette=self._style_manager.theme.palette)
+        self._button_strip = ButtonStrip(self, layout_config=self._layout_config)
+        self._sliding_track = SlidingTrackIndicator(
+            self,
+            palette=self._style_manager.theme.palette,
+            layout=self._layout_config,
+        )
         self._date_time_selector = DateTimeSelector(self, mode=GO_TO_DATE, palette=self._style_manager.theme.palette)
         self._calendar = CalendarWidget(self, style=registry.calendar_config())
-        self._cancel_button = BasicButton(self, label="Cancel", width=72, height=34)
-        self._go_to_button = BasicButton(self, label="Go to", width=64, height=34)
+        self._cancel_button = BasicButton(self, label="Cancel", width=72, layout=self._layout_config)
+        self._go_to_button = BasicButton(self, label="Go to", width=64, layout=self._layout_config)
 
         self._build_ui()
         self._connect_signals()
@@ -69,15 +77,33 @@ class DateRangePicker(QWidget):
     # Public API --------------------------------------------------------------------
 
     def get_selected_date(self) -> QDate:
+        """Return the currently selected date or an invalid ``QDate``."""
         start, _ = self._state_manager.state.selected_dates
         return start or QDate()
 
     def get_selected_range(self) -> DateRange:
+        """Return the currently selected date range."""
         start, end = self._state_manager.state.selected_dates
         return DateRange(start_date=start, end_date=end)
 
     def set_mode(self, mode: PickerMode) -> None:
+        """Switch the picker to the provided :class:`PickerMode`."""
+        LOGGER.debug("Switching picker mode via API: %s", mode.name)
         self._coordinator.switch_mode(mode)
+
+    def reset(self) -> None:
+        """Reset the picker state to match the initial configuration."""
+        LOGGER.info("Resetting DateRangePicker to configuration defaults")
+        self._animator.stop()
+        self._state_manager.reset()
+        self._initialize_state()
+
+    def cleanup(self) -> None:
+        """Release long-lived objects and stop active animations."""
+        LOGGER.info("Cleaning up DateRangePicker resources")
+        self._animator.stop()
+        self._coordinator.deleteLater()
+        self._state_manager.deleteLater()
 
     # Internal setup ----------------------------------------------------------------
 
@@ -85,37 +111,11 @@ class DateRangePicker(QWidget):
         self._setup_window()
         self._build_header(self._header_strip)
 
-        palette = self._style_manager.theme.palette
-
-        button_container = QWidget(self)
-        button_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        button_container.setStyleSheet(
-            f"background-color: {palette.button_container_background};"
-            "border: none;"
-        )
-        button_container_layout = QVBoxLayout(button_container)
-        button_container_layout.setContentsMargins(0, 0, 0, 0)
-        button_container_layout.setSpacing(0)
-        button_container_layout.addWidget(self._button_strip)
-        button_container_layout.addWidget(self._sliding_track)
-        button_container_layout.addSpacing(16)
-        button_container_layout.addWidget(self._date_time_selector)
-        button_container_layout.addWidget(self._calendar, alignment=Qt.AlignmentFlag.AlignCenter)
-
-        content_container = QWidget(self)
-        content_layout = QVBoxLayout(content_container)
-        content_layout.setContentsMargins(
-            self._config.theme.layout.main_padding,
-            0,
-            self._config.theme.layout.main_padding,
-            0,
-        )
-        content_layout.setSpacing(0)
-        content_layout.addWidget(self._header_strip)
-        content_layout.addWidget(button_container)
+        content_container = self._build_content_container()
+        actions_wrapper = self._build_actions_section()
 
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(0, 0, 0, self._config.theme.layout.main_padding)
+        main_layout.setContentsMargins(0, 0, 0, self._layout_config.main_padding)
         main_layout.setSpacing(0)
         main_layout.addWidget(content_container)
         main_layout.addStretch(1)
@@ -125,45 +125,15 @@ class DateRangePicker(QWidget):
         divider.setFrameShape(QFrame.Shape.NoFrame)
         divider.setFixedHeight(1)
         divider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        divider.setStyleSheet(f"background-color: {palette.track_background};")
+        divider.setStyleSheet(f"background-color: {self._style_manager.theme.palette.track_background};")
         main_layout.addWidget(divider)
         main_layout.addSpacing(16)
-
-        actions_wrapper = QWidget(self)
-        actions_layout = QHBoxLayout(actions_wrapper)
-        actions_layout.setContentsMargins(
-            self._config.theme.layout.main_padding,
-            0,
-            self._config.theme.layout.main_padding,
-            0,
-        )
-        actions_layout.setSpacing(12)
-        actions_layout.addStretch(1)
-        actions_layout.addWidget(self._cancel_button)
-        actions_layout.addWidget(self._go_to_button)
-        actions_wrapper.setStyleSheet(
-            f"background-color: {palette.window_background};"
-            "border: none;"
-        )
         main_layout.addWidget(actions_wrapper)
 
-        self._coordinator.register_button_strip(self._button_strip)
-        self._coordinator.register_sliding_track(self._sliding_track)
-        self._coordinator.register_date_time_selector(self._date_time_selector)
-        self._coordinator.register_calendar(self._calendar)
-        self._coordinator.set_sliding_track_animator(self._animate_sliding_track)
-
-        self._style_manager.apply_basic_button(
-            self._cancel_button,
-            variant=self._style_manager.registry.BUTTON_GHOST,
-        )
-        self._style_manager.apply_basic_button(
-            self._go_to_button,
-            variant=self._style_manager.registry.BUTTON_ACCENT,
-        )
+        self._configure_components()
 
     def _setup_window(self) -> None:
-        layout_config = self._config.theme.layout
+        layout_config = self._layout_config
         self.setFixedWidth(layout_config.window_min_width)
         self._apply_window_height(layout_config.window_min_height)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -178,9 +148,9 @@ class DateRangePicker(QWidget):
         layout = QHBoxLayout(header_strip)
         layout.setContentsMargins(
             0,
-            self._config.theme.layout.main_padding,
+            self._layout_config.main_padding,
             0,
-            self._config.theme.layout.header_bottom_margin,
+            self._layout_config.header_bottom_margin,
         )
         layout.setSpacing(0)
 
@@ -202,21 +172,83 @@ class DateRangePicker(QWidget):
         layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
         self._close_button = close_button
 
+    def _build_button_container(self) -> QWidget:
+        palette = self._style_manager.theme.palette
+        button_container = QWidget(self)
+        button_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        button_container.setStyleSheet(
+            f"background-color: {palette.button_container_background};"
+            "border: none;"
+        )
+        layout = QVBoxLayout(button_container)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        layout.addWidget(self._button_strip)
+        layout.addWidget(self._sliding_track)
+        layout.addSpacing(16)
+        layout.addWidget(self._date_time_selector)
+        layout.addWidget(self._calendar, alignment=Qt.AlignmentFlag.AlignCenter)
+        return button_container
+
+    def _build_content_container(self) -> QWidget:
+        container = QWidget(self)
+        layout = QVBoxLayout(container)
+        layout.setContentsMargins(
+            self._layout_config.main_padding,
+            0,
+            self._layout_config.main_padding,
+            0,
+        )
+        layout.setSpacing(0)
+        layout.addWidget(self._header_strip)
+        layout.addWidget(self._build_button_container())
+        return container
+
+    def _build_actions_section(self) -> QWidget:
+        palette = self._style_manager.theme.palette
+        wrapper = QWidget(self)
+        layout = QHBoxLayout(wrapper)
+        layout.setContentsMargins(
+            self._layout_config.main_padding,
+            0,
+            self._layout_config.main_padding,
+            0,
+        )
+        layout.setSpacing(12)
+        layout.addStretch(1)
+        layout.addWidget(self._cancel_button)
+        layout.addWidget(self._go_to_button)
+        wrapper.setStyleSheet(
+            f"background-color: {palette.window_background};"
+            "border: none;"
+        )
+        return wrapper
+
+    def _configure_components(self) -> None:
+        self._coordinator.register_button_strip(self._button_strip)
+        self._coordinator.register_sliding_track(self._sliding_track)
+        self._coordinator.register_date_time_selector(self._date_time_selector)
+        self._coordinator.register_calendar(self._calendar)
+        self._coordinator.set_sliding_track_animator(self._animate_sliding_track)
+
+        self._style_manager.apply_basic_button(
+            self._cancel_button,
+            variant=self._style_manager.registry.BUTTON_GHOST,
+        )
+        self._style_manager.apply_basic_button(
+            self._go_to_button,
+            variant=self._style_manager.registry.BUTTON_ACCENT,
+        )
+
     def _connect_signals(self) -> None:
-        close_signal = cast(_VoidSignal, self._close_button.clicked)
-        close_signal.connect(self.cancelled.emit)
-        cancel_signal = cast(_VoidSignal, self._cancel_button.clicked)
-        cancel_signal.connect(self.cancelled.emit)
+        connect_signal(self._close_button.clicked, self.cancelled.emit)
+        connect_signal(self._cancel_button.clicked, self.cancelled.emit)
 
-        date_signal = cast(_DateSignal, self._state_manager.selected_date_changed)
-        date_signal.connect(self.date_selected.emit)
-        range_signal = cast(_RangeSignal, self._state_manager.selected_range_changed)
-        range_signal.connect(self._emit_range_selected)
+        connect_signal(self._state_manager.selected_date_changed, self.date_selected.emit)
+        connect_signal(self._state_manager.selected_range_changed, self._emit_range_selected)
 
-        go_to_signal = cast(_VoidSignal, self._go_to_button.clicked)
-        go_to_signal.connect(self._emit_current_selection)
-        mode_signal = cast(_ModeSignal, self._state_manager.mode_changed)
-        mode_signal.connect(self._on_mode_changed)
+        connect_signal(self._go_to_button.clicked, self._emit_current_selection)
+        connect_signal(self._state_manager.mode_changed, self._on_mode_changed)
 
     def _initialize_state(self) -> None:
         state = self._state_manager.state
@@ -237,18 +269,22 @@ class DateRangePicker(QWidget):
             self._date_time_selector.set_mode(GO_TO_DATE)
         else:
             self._date_time_selector.set_mode(CUSTOM_DATE_RANGE)
-        self._sliding_track.set_state(position=0, width=constants.DATE_INDICATOR_WIDTH)
+        self._sliding_track.set_state(position=0, width=self._layout_config.date_indicator_width)
         self._on_mode_changed(self._state_manager.state.mode)
 
     # Event helpers -----------------------------------------------------------------
 
     def _animate_sliding_track(self, mode: PickerMode) -> None:
+        indicator_width = self._layout_config.date_indicator_width
+        custom_width = self._layout_config.custom_range_indicator_width
+        button_gap = self._layout_config.button_gap
+
         if mode is PickerMode.DATE:
             target_position = 0
-            target_width = constants.DATE_INDICATOR_WIDTH
+            target_width = indicator_width
         else:
-            target_position = constants.DATE_INDICATOR_WIDTH + constants.BUTTON_GAP
-            target_width = constants.CUSTOM_RANGE_INDICATOR_WIDTH
+            target_position = indicator_width + button_gap
+            target_width = custom_width
 
         current_position = self._sliding_track.current_position
         current_width = self._sliding_track.current_width or self._current_track_width
@@ -276,7 +312,7 @@ class DateRangePicker(QWidget):
             self.date_selected.emit(start)
 
     def _on_mode_changed(self, mode: PickerMode) -> None:
-        layout_config = self._config.theme.layout
+        layout_config = self._layout_config
         if mode is PickerMode.CUSTOM_RANGE:
             target_height = layout_config.window_min_height_custom_range
         else:
@@ -287,22 +323,6 @@ class DateRangePicker(QWidget):
         self.setMinimumHeight(height)
         self.setMaximumHeight(height)
         self.resize(self.width(), height)
-
-
-class _VoidSignal(Protocol):
-    def connect(self, slot: Callable[[], None]) -> object: ...
-
-
-class _DateSignal(Protocol):
-    def connect(self, slot: Callable[[QDate], None]) -> object: ...
-
-
-class _RangeSignal(Protocol):
-    def connect(self, slot: Callable[[QDate, QDate], None]) -> object: ...
-
-
-class _ModeSignal(Protocol):
-    def connect(self, slot: Callable[[PickerMode], None]) -> object: ...
 
 
 __all__ = ["DateRangePicker"]

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Callable, Final, Optional, Pattern, Protocol, cast
+from typing import Final, Optional, Pattern
 
 from PyQt6.QtCore import QEvent, QObject, Qt
 from PyQt6.QtGui import QEnterEvent
@@ -10,16 +10,13 @@ from PyQt6.QtSvgWidgets import QSvgWidget
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLineEdit, QSizePolicy, QWidget
 
 from ...styles.theme import InputStyleConfig
+from ...utils import connect_signal
 from ...utils.svg_loader import load_svg_widget
 
 DEFAULT_HEIGHT: Final[int] = 34
 DEFAULT_WIDTH: Final[int] = 150
 DEFAULT_ICON_PLACEHOLDER_WIDTH: Final[int] = 32
 DEFAULT_ICON_SIZE: Final[int] = 28
-class _StrSignal(Protocol):
-    def connect(self, slot: Callable[[str], None]) -> object: ...
-
-
 class InputWithIcon(QWidget):
     """Input widget that hosts a text field with an optional icon."""
 
@@ -75,8 +72,7 @@ class InputWithIcon(QWidget):
         )
         if self._max_length is not None:
             self.input.setMaxLength(self._max_length)
-        text_signal = cast(_StrSignal, self.input.textChanged)
-        text_signal.connect(self._on_text_changed)
+        connect_signal(self.input.textChanged, self._on_text_changed)
 
         root_layout.addWidget(self.input, stretch=1)
 

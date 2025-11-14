@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, fields
+
+from ..exceptions import InvalidThemeError
+from ..validation import validate_dimension, validate_hex_color
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,6 +48,12 @@ class ColorPalette:
     input_icon_hover_color: str = "#dbdbdb"
     input_text_color: str = "#f5f5f5"
     input_placeholder_color: str = "#8c8c8c"
+
+    def __post_init__(self) -> None:
+        for definition in fields(self):
+            value = getattr(self, definition.name)
+            validated = validate_hex_color(value, field_name=definition.name)
+            object.__setattr__(self, definition.name, validated)
 
 
 @dataclass(frozen=True, slots=True)
@@ -169,6 +178,33 @@ class LayoutConfig:
     calendar_day_underline_offset: int = 6
     calendar_day_underline_width: int = 20
 
+    def __post_init__(self) -> None:
+        positive_fields = {
+            "window_min_width",
+            "window_min_height",
+            "window_min_height_custom_range",
+            "date_button_width",
+            "custom_range_button_width",
+            "date_indicator_width",
+            "custom_range_indicator_width",
+            "default_track_width",
+            "sliding_indicator_height",
+            "action_button_height",
+            "calendar_day_label_height",
+            "calendar_day_cell_size",
+            "calendar_day_underline_height",
+            "calendar_day_underline_width",
+        }
+        for definition in fields(self):
+            value = getattr(self, definition.name)
+            min_value = 1 if definition.name in positive_fields else 0
+            validated = validate_dimension(
+                value,
+                field_name=definition.name,
+                min_value=min_value,
+            )
+            object.__setattr__(self, definition.name, validated)
+
 
 @dataclass(frozen=True, slots=True)
 class Theme:
@@ -176,6 +212,14 @@ class Theme:
 
     palette: ColorPalette = field(default_factory=ColorPalette)
     layout: LayoutConfig = field(default_factory=LayoutConfig)
+
+    def __post_init__(self) -> None:
+        palette_obj = object.__getattribute__(self, "palette")
+        if not isinstance(palette_obj, ColorPalette):
+            raise InvalidThemeError("palette must be an instance of ColorPalette")
+        layout_obj = object.__getattribute__(self, "layout")
+        if not isinstance(layout_obj, LayoutConfig):
+            raise InvalidThemeError("layout must be an instance of LayoutConfig")
 
 
 DEFAULT_THEME = Theme()
