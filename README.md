@@ -1,6 +1,6 @@
 # Date Range Popover
 
-I built this PyQt6 popover because I wanted a compact date and range picker I could drop into desktop tools without rewriting the same scaffolding each time. The code lives at <https://github.com/Taitranz/pyqt6-date-range-popover>, and anyone is free to clone it or install it locally.
+I built this PyQt6 popover because I wanted a compact date and range picker I could drop into desktop tools without rewriting the same scaffolding each time.
 
 ## What you get
 
@@ -94,7 +94,7 @@ The metadata already lists the license, authorship, and dependencies, so those c
 
 ### Maintenance
 
-This is a side project I built for my own tools, and my schedule is pretty full, so I do not expect to actively iterate on it. I may occasionally fix critical issues, but you should treat the API and behavior as "use at your own risk" and feel free to fork if you need faster changes.
+This is a side project I built for my own tools, and my schedule is pretty full, so I do not expect to actively iterate on it. I may occasionally fix critical issues, but you should treat the API and behavior as "use at your own risk" and feel free to fork if you need faster changes. Some may recognise the design 😂.
 
 ## License
 
