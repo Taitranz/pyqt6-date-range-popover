@@ -3,16 +3,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Optional
 
-from PyQt6.QtCore import QDate, QTime, QSize, Qt, pyqtSignal
-from PyQt6.QtWidgets import (
-    QFrame,
-    QHBoxLayout,
-    QLabel,
-    QPushButton,
-    QSizePolicy,
-    QVBoxLayout,
-    QWidget,
-)
+from PyQt6.QtCore import QDate, QTime, Qt, pyqtSignal
+from PyQt6.QtWidgets import QVBoxLayout, QWidget, QSizePolicy
 
 from ..animation.slide_animator import SlideAnimator
 from ..components.buttons import BasicButton, ButtonStrip
@@ -22,11 +14,16 @@ from ..components.layout import DraggableHeaderStrip, SlidingTrackIndicator
 from ..managers.coordinator import DatePickerCoordinator
 from ..managers.state_manager import DatePickerStateManager, PickerMode
 from ..managers.style_manager import StyleManager
-from ..styles import constants
 from ..styles.style_registry import StyleRegistry
 from ..utils import connect_signal, get_logger
-from ..utils.svg_loader import load_colored_svg_icon
 from .config import DatePickerConfig, DateRange
+from .picker_layouts import (
+    build_actions_section,
+    build_button_section,
+    build_content_container,
+    build_divider,
+    build_header_layout,
+)
 
 LOGGER = get_logger(__name__)
 
@@ -187,10 +184,35 @@ class DateRangePicker(QWidget):
     def _build_ui(self) -> None:
         """Assemble the widget tree and persist references to core components."""
         self._setup_window()
-        self._build_header(self._header_strip)
+        self._close_button = build_header_layout(
+            header_strip=self._header_strip,
+            layout_config=self._layout_config,
+            palette=self._style_manager.theme.palette,
+            close_icon_path=CLOSE_ICON_PATH,
+        )
 
-        content_container = self._build_content_container()
-        actions_wrapper = self._build_actions_section()
+        button_section = build_button_section(
+            parent=self,
+            palette=self._style_manager.theme.palette,
+            layout_config=self._layout_config,
+            button_strip=self._button_strip,
+            sliding_track=self._sliding_track,
+            date_time_selector=self._date_time_selector,
+            calendar=self._calendar,
+        )
+        content_container = build_content_container(
+            parent=self,
+            layout_config=self._layout_config,
+            header_strip=self._header_strip,
+            button_section=button_section,
+        )
+        actions_wrapper = build_actions_section(
+            parent=self,
+            palette=self._style_manager.theme.palette,
+            layout_config=self._layout_config,
+            cancel_button=self._cancel_button,
+            go_to_button=self._go_to_button,
+        )
 
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, self._layout_config.main_padding)
@@ -199,11 +221,10 @@ class DateRangePicker(QWidget):
         main_layout.addStretch(1)
         main_layout.addSpacing(16)
 
-        divider = QFrame(self)
-        divider.setFrameShape(QFrame.Shape.NoFrame)
-        divider.setFixedHeight(1)
-        divider.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        divider.setStyleSheet(f"background-color: {self._style_manager.theme.palette.track_background};")
+        divider = build_divider(
+            parent=self,
+            palette=self._style_manager.theme.palette,
+        )
         main_layout.addWidget(divider)
         main_layout.addSpacing(16)
         main_layout.addWidget(actions_wrapper)
@@ -222,90 +243,6 @@ class DateRangePicker(QWidget):
             f"border-radius: {layout_config.window_radius}px;"
         )
         self.setWindowFlags(Qt.WindowType.Window)
-
-    def _build_header(self, header_strip: DraggableHeaderStrip) -> None:
-        """Create the draggable header that doubles as the popover title bar."""
-        layout = QHBoxLayout(header_strip)
-        layout.setContentsMargins(
-            0,
-            self._layout_config.main_padding,
-            0,
-            self._layout_config.header_bottom_margin,
-        )
-        layout.setSpacing(0)
-
-        title = QLabel("Go to", header_strip)
-        title_font = constants.create_header_font()
-        title_font.setBold(True)
-        title.setFont(title_font)
-        layout.addWidget(title, alignment=Qt.AlignmentFlag.AlignLeft)
-
-        close_button = QPushButton(header_strip)
-        icon_size = QSize(18, 18)
-        close_button.setIcon(load_colored_svg_icon(CLOSE_ICON_PATH, 18, self._style_manager.theme.palette.button_selected_color))
-        close_button.setIconSize(icon_size)
-        close_button.setFixedSize(30, 30)
-        close_button.setFocusPolicy(Qt.FocusPolicy.NoFocus)
-        close_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        close_button.setStyleSheet("border: none; background: transparent; outline: none;")
-        close_button.setToolTip("Close")
-        layout.addWidget(close_button, alignment=Qt.AlignmentFlag.AlignRight)
-        self._close_button = close_button
-
-    def _build_button_container(self) -> QWidget:
-        """Host the mode buttons, sliding indicator, inputs, and calendar."""
-        palette = self._style_manager.theme.palette
-        button_container = QWidget(self)
-        button_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        button_container.setStyleSheet(
-            f"background-color: {palette.button_container_background};"
-            "border: none;"
-        )
-        layout = QVBoxLayout(button_container)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(0)
-        layout.addWidget(self._button_strip)
-        layout.addWidget(self._sliding_track)
-        layout.addSpacing(16)
-        layout.addWidget(self._date_time_selector)
-        layout.addWidget(self._calendar, alignment=Qt.AlignmentFlag.AlignCenter)
-        return button_container
-
-    def _build_content_container(self) -> QWidget:
-        """Wrap the header strip and primary controls with consistent padding."""
-        container = QWidget(self)
-        layout = QVBoxLayout(container)
-        layout.setContentsMargins(
-            self._layout_config.main_padding,
-            0,
-            self._layout_config.main_padding,
-            0,
-        )
-        layout.setSpacing(0)
-        layout.addWidget(self._header_strip)
-        layout.addWidget(self._build_button_container())
-        return container
-
-    def _build_actions_section(self) -> QWidget:
-        """Create the footer that hosts Cancel / Go To actions."""
-        palette = self._style_manager.theme.palette
-        wrapper = QWidget(self)
-        layout = QHBoxLayout(wrapper)
-        layout.setContentsMargins(
-            self._layout_config.main_padding,
-            0,
-            self._layout_config.main_padding,
-            0,
-        )
-        layout.setSpacing(12)
-        layout.addStretch(1)
-        layout.addWidget(self._cancel_button)
-        layout.addWidget(self._go_to_button)
-        wrapper.setStyleSheet(
-            f"background-color: {palette.window_background};"
-            "border: none;"
-        )
-        return wrapper
 
     def _configure_components(self) -> None:
         """Register child widgets with their coordinators and apply styles."""

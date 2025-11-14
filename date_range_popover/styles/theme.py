@@ -54,6 +54,20 @@ class ColorPalette:
     input_icon_hover_color: str = "#dbdbdb"
     input_text_color: str = "#f5f5f5"
     input_placeholder_color: str = "#8c8c8c"
+    input_selection_background: str = "#143a87"
+    input_selection_text_color: str = "#ffffff"
+    time_popup_background: str = "#1f1f1f"
+    time_popup_text_color: str = "#ffffff"
+    time_popup_hover_background: str = "#2e2e2e"
+    time_popup_hover_text_color: str = "#ffffff"
+    time_popup_selected_background: str = "#f2f2f2"
+    time_popup_selected_text_color: str = "#000000"
+    divider_color: str = "#4a4a4a"
+    mode_label_container_background: str = "#2e2e2e"
+    mode_label_text_color: str = "#8c8c8c"
+    close_button_background: str = "#00000000"
+    close_button_hover_background: str = "#2e2e2e66"
+    close_button_pressed_background: str = "#2e2e2e99"
 
     def __post_init__(self) -> None:
         """Validate every palette entry with :func:`validate_hex_color`."""
@@ -169,6 +183,8 @@ class InputStyleConfig:
     border_hover_width: int = 1
     border_focus_width: int = 2
     border_previous_focus_width: int = 2
+    selection_background: str = "#143a87"
+    selection_text_color: str = "#ffffff"
 
 
 @dataclass(frozen=True, slots=True)

@@ -1,4 +1,6 @@
 """Example applications demonstrating the date range popover."""
 
-__all__ = []
+from typing import List
+
+__all__: List[str] = []
 

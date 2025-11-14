@@ -7,7 +7,6 @@ from PyQt6.QtCore import QCoreApplication, QDate, QEvent, QObject, Qt, QTime, py
 from PyQt6.QtGui import QMouseEvent
 from PyQt6.QtWidgets import (
     QApplication,
-    QCompleter,
     QHBoxLayout,
     QLineEdit,
     QVBoxLayout,
@@ -17,6 +16,12 @@ from PyQt6.QtWidgets import (
 from ...styles.theme import ColorPalette
 from ...utils import connect_signal
 from .input_with_icon import InputWithIcon
+from .time_completer import (
+    create_time_completer,
+    dismiss_time_popup,
+    generate_time_options,
+    show_time_popup,
+)
 
 ModeLiteral = Literal["go_to_date", "custom_date_range"]
 GO_TO_DATE: Final[ModeLiteral] = "go_to_date"
@@ -128,7 +133,7 @@ class DateTimeSelector(QWidget):
                 if target in self._date_inputs:
                     self._last_focused_date_input = target
                 elif target in self._time_inputs:
-                    self._show_time_popup(target.input)
+                    show_time_popup(target.input)
         return super().eventFilter(a0, a1)
 
     def set_mode(self, mode: ModeLiteral) -> None:
@@ -193,55 +198,20 @@ class DateTimeSelector(QWidget):
 
         if self._mode == GO_TO_DATE:
             self._layout.setSpacing(0)
-            row_layout = QHBoxLayout()
-            row_layout.setContentsMargins(0, 0, 0, 0)
-            row_layout.setSpacing(8)
-
-            date_input = self._create_input(
-                self,
-                text=self._default_single_date_text,
-                is_date=True,
+            date_input, _ = self._build_date_time_row(
+                date_text=self._default_single_date_text,
+                time_text=self._default_single_time_text,
             )
             self._go_to_date_input = date_input
-            time_input = self._create_input(
-                self,
-                text=self._default_single_time_text,
-                width=100,
-                icon_path=str(CLOCK_ICON_PATH),
-                is_date=False,
-            )
-
-            row_layout.addWidget(date_input)
-            row_layout.addStretch()
-            row_layout.addWidget(time_input)
-            row_layout.setAlignment(time_input, Qt.AlignmentFlag.AlignRight)
-            self._layout.addLayout(row_layout)
             return
 
         if self._mode == CUSTOM_DATE_RANGE:
             self._layout.setSpacing(16)
             for index in range(2):
-                row_layout = QHBoxLayout()
-                row_layout.setContentsMargins(0, 0, 0, 0)
-                row_layout.setSpacing(8)
-
-                date_input = self._create_input(
-                    self,
-                    text=self._default_range_date_texts[index],
-                    is_date=True,
+                self._build_date_time_row(
+                    date_text=self._default_range_date_texts[index],
+                    time_text=self._default_range_time_texts[index],
                 )
-                time_input = self._create_input(
-                    self,
-                    text=self._default_range_time_texts[index],
-                    width=100,
-                    icon_path=str(CLOCK_ICON_PATH),
-                    is_date=False,
-                )
-                row_layout.addWidget(date_input)
-                row_layout.addStretch()
-                row_layout.addWidget(time_input)
-                row_layout.setAlignment(time_input, Qt.AlignmentFlag.AlignRight)
-                self._layout.addLayout(row_layout)
             self._layout.addStretch()
 
     def _create_input(
@@ -301,66 +271,19 @@ class DateTimeSelector(QWidget):
     def _attach_time_completer(self, line_edit: QLineEdit) -> None:
         if self._time_model is None:
             self._time_model = QStringListModel(
-                self._generate_time_options(),
+                generate_time_options(self._time_step_minutes),
                 self,
             )
-        completer = QCompleter(self._time_model, self)
-        completer.setCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-        completer.setCompletionMode(QCompleter.CompletionMode.PopupCompletion)
-        completer.setMaxVisibleItems(7)
-        popup = completer.popup()
-        if popup is not None:
-            popup.setStyleSheet(
-                "QListView { width: 98px; margin: 0px; padding: 0px; border: none; } "
-                "QListView::item { height: 32px; margin: 0px; padding-left: 8px; padding-right: 8px; background-color: #1f1f1f; color: #ffffff; } "
-                "QListView::item:hover { background-color: #2e2e2e; color: #ffffff; } "
-                "QListView::item:selected { background-color: #f2f2f2; color: #000000; } "
-                "QScrollBar:vertical { width: 0px; } QScrollBar:horizontal { height: 0px; }"
-            )
-            popup.setFixedWidth(98)
-            popup.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-            popup.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        completer = create_time_completer(
+            parent=self,
+            palette=self._palette,
+            time_model=self._time_model,
+        )
         line_edit.setCompleter(completer)
 
     def _dismiss_time_popups(self) -> None:
         for time_input in self._time_inputs:
-            completer = time_input.input.completer()
-            if completer is None:
-                continue
-            popup = completer.popup()
-            if popup is not None and popup.isVisible():
-                popup.hide()
-
-    def _generate_time_options(self) -> list[str]:
-        step_minutes = max(1, min(self._time_step_minutes, 60))
-        return [
-            f"{hour:02d}:{minute:02d}"
-            for hour in range(24)
-            for minute in range(0, 60, step_minutes)
-        ]
-
-    def _show_time_popup(self, line_edit: QLineEdit) -> None:
-        completer = line_edit.completer()
-        if completer is None:
-            return
-        popup = completer.popup()
-        completer.setCompletionPrefix("")
-        text = line_edit.text()
-        if text and popup is not None:
-            model = completer.model()
-            if model is not None:
-                match_indexes = model.match(
-                    model.index(0, 0),
-                    Qt.ItemDataRole.DisplayRole,
-                    text,
-                    1,
-                    Qt.MatchFlag.MatchExactly,
-                )
-                if match_indexes:
-                    popup.setCurrentIndex(match_indexes[0])
-                    popup.scrollTo(match_indexes[0])
-        popup_rect = line_edit.rect().translated(0, 3)
-        completer.complete(popup_rect)
+            dismiss_time_popup(time_input.input)
 
     def _on_date_input_text_changed(self, target: InputWithIcon, text: str) -> None:
         if target not in self._date_inputs:
@@ -422,6 +345,32 @@ class DateTimeSelector(QWidget):
             return True
         self._focus_window()
         return True
+
+    def _build_date_time_row(self, *, date_text: str, time_text: str) -> tuple[InputWithIcon, InputWithIcon]:
+        """Create a row containing paired date/time inputs."""
+
+        row_layout = QHBoxLayout()
+        row_layout.setContentsMargins(0, 0, 0, 0)
+        row_layout.setSpacing(8)
+
+        date_input = self._create_input(
+            self,
+            text=date_text,
+            is_date=True,
+        )
+        time_input = self._create_input(
+            self,
+            text=time_text,
+            width=100,
+            icon_path=str(CLOCK_ICON_PATH),
+            is_date=False,
+        )
+        row_layout.addWidget(date_input)
+        row_layout.addStretch()
+        row_layout.addWidget(time_input)
+        row_layout.setAlignment(time_input, Qt.AlignmentFlag.AlignRight)
+        self._layout.addLayout(row_layout)
+        return date_input, time_input
 
     @staticmethod
     def _candidate_accepts_mouse_focus(candidate: QWidget | None) -> bool:

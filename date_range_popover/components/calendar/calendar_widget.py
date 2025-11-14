@@ -8,6 +8,11 @@ from PyQt6.QtCore import QDate, Qt, pyqtSignal
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QStackedWidget, QVBoxLayout, QWidget, QSizePolicy
 
 from ...exceptions import InvalidDateError
+from ...styles.style_templates import (
+    ModeLabelStyle,
+    mode_label_container_qss,
+    mode_label_text_qss,
+)
 from ...styles.theme import CalendarStyleConfig, LayoutConfig
 from ...validation import validate_date_range, validate_qdate
 from ...utils import connect_signal, first_of_month
@@ -15,6 +20,11 @@ from .day_view import CalendarDayView
 from .month_view import CalendarMonthView
 from .navigation import CalendarNavigation
 from .year_view import CalendarYearView
+from .year_range_utils import (
+    clamp_year_range_start,
+    compute_year_range_start,
+    year_range_limits,
+)
 
 
 class CalendarViewMode(Enum):
@@ -73,7 +83,11 @@ class CalendarWidget(QWidget):
         self._range_end: QDate | None = None
         self._min_date: QDate | None = None
         self._max_date: QDate | None = None
-        self._year_range_start = self._compute_year_range_start(self._visible_month.year())
+        self._year_range_start = compute_year_range_start(
+            self._visible_month.year(),
+            self._YEAR_RANGE_SIZE,
+            max_year=self._MAX_YEAR,
+        )
 
         self._navigation = CalendarNavigation(style=self._style)
         self._day_view = CalendarDayView(style=self._style, layout=self._layout_config)
@@ -99,18 +113,15 @@ class CalendarWidget(QWidget):
         self._day_view.apply_style(style)
         self._month_view.apply_style(style)
         self._year_view.apply_style(style)
+        mode_label_style = ModeLabelStyle(
+            background=style.mode_label_background,
+            text_color=style.muted_day_text_color,
+            radius=4,
+        )
         if self._mode_label_container is not None:
-            self._mode_label_container.setStyleSheet(
-                f"background-color: {style.mode_label_background};"
-                " border-radius: 4px;"
-                " border: none;"
-            )
+            self._mode_label_container.setStyleSheet(mode_label_container_qss(mode_label_style))
         if self._mode_label is not None:
-            self._mode_label.setStyleSheet(
-                f"color: {style.muted_day_text_color};"
-                " background-color: transparent;"
-                " border: none;"
-            )
+            self._mode_label.setStyleSheet(mode_label_text_qss(mode_label_style))
 
     def set_constraints(self, *, min_date: QDate | None, max_date: QDate | None) -> None:
         """Limit selectable dates and navigation range."""
@@ -175,23 +186,7 @@ class CalendarWidget(QWidget):
 
         layout.addWidget(self._navigation)
 
-        self._mode_label_container = QWidget(self)
-        self._mode_label_container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
-        self._mode_label_container.setSizePolicy(
-            QSizePolicy.Policy.Expanding,
-            QSizePolicy.Policy.Fixed,
-        )
-        self._mode_label_container.setFixedHeight(self._layout_config.calendar_day_label_height)
-        self._mode_label_container.setVisible(False)
-        mode_label_layout = QHBoxLayout(self._mode_label_container)
-        mode_label_layout.setContentsMargins(0, 0, 0, 0)
-        mode_label_layout.setSpacing(self._layout_config.calendar_grid_spacing)
-        mode_label_layout.addStretch()
-        self._mode_label = QLabel("", self._mode_label_container)
-        self._mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._mode_label.setFixedHeight(self._layout_config.calendar_day_label_height)
-        mode_label_layout.addWidget(self._mode_label)
-        mode_label_layout.addStretch()
+        self._mode_label_container = self._setup_mode_label_container()
         layout.addWidget(self._mode_label_container)
 
         self._content_stack.setSizePolicy(
@@ -311,14 +306,30 @@ class CalendarWidget(QWidget):
 
     def _shift_year_range(self, delta: int) -> None:
         proposed = self._year_range_start + delta
-        self._year_range_start = self._clamp_year_range_start(proposed)
+        self._year_range_start = clamp_year_range_start(
+            proposed,
+            self._min_date,
+            self._max_date,
+            self._YEAR_RANGE_SIZE,
+            max_year=self._MAX_YEAR,
+        )
         self._refresh_views()
 
     def _ensure_year_range_contains(self, year: int) -> None:
         end = self._year_range_start + self._YEAR_RANGE_SIZE - 1
         if year < self._year_range_start or year > end:
-            candidate = self._compute_year_range_start(year)
-            self._year_range_start = self._clamp_year_range_start(candidate)
+            candidate = compute_year_range_start(
+                year,
+                self._YEAR_RANGE_SIZE,
+                max_year=self._MAX_YEAR,
+            )
+            self._year_range_start = clamp_year_range_start(
+                candidate,
+                self._min_date,
+                self._max_date,
+                self._YEAR_RANGE_SIZE,
+                max_year=self._MAX_YEAR,
+            )
 
     def _refresh_views(self) -> None:
         self._day_view.update_days(
@@ -382,20 +393,6 @@ class CalendarWidget(QWidget):
     def _max_year(self) -> int | None:
         return self._max_date.year() if self._max_date is not None else None
 
-    def _year_range_limits(self) -> tuple[int, int]:
-        span = self._YEAR_RANGE_SIZE
-        min_start = 1 if self._min_date is None else self._compute_year_range_start(self._min_date.year())
-        max_start = self._MAX_YEAR - span + 1
-        if self._max_date is not None:
-            max_start = min(max_start, self._compute_year_range_start(self._max_date.year()))
-        if min_start > max_start:
-            min_start = max_start
-        return min_start, max_start
-
-    def _clamp_year_range_start(self, start: int) -> int:
-        min_start, max_start = self._year_range_limits()
-        return max(min_start, min(start, max_start))
-
     def _can_move_month(self, delta: int) -> bool:
         candidate = first_of_month(self._visible_month.addMonths(delta))
         min_month = self._first_allowed_month()
@@ -417,20 +414,39 @@ class CalendarWidget(QWidget):
         return 1 <= candidate_year <= self._MAX_YEAR
 
     def _can_shift_year_range(self, delta: int) -> bool:
-        min_start, max_start = self._year_range_limits()
+        min_start, max_start = year_range_limits(
+            self._min_date,
+            self._max_date,
+            self._YEAR_RANGE_SIZE,
+            max_year=self._MAX_YEAR,
+        )
         if delta < 0:
             return self._year_range_start > min_start
         return self._year_range_start < max_start
 
-    def _compute_year_range_start(self, year: int) -> int:
-        span = self._YEAR_RANGE_SIZE
-        if year < 1:
-            return 1
-        base = ((year - 1) // span) * span + 1
-        max_start = self._MAX_YEAR - span + 1
-        if base > max_start:
-            base = max_start
-        return base
+    def _setup_mode_label_container(self) -> QWidget:
+        """Build the optional mode label container embedded below the nav."""
+
+        container = QWidget(self)
+        container.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        container.setSizePolicy(
+            QSizePolicy.Policy.Expanding,
+            QSizePolicy.Policy.Fixed,
+        )
+        container.setFixedHeight(self._layout_config.calendar_day_label_height)
+        container.setVisible(False)
+
+        mode_label_layout = QHBoxLayout(container)
+        mode_label_layout.setContentsMargins(0, 0, 0, 0)
+        mode_label_layout.setSpacing(self._layout_config.calendar_grid_spacing)
+        mode_label_layout.addStretch()
+
+        self._mode_label = QLabel("", container)
+        self._mode_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._mode_label.setFixedHeight(self._layout_config.calendar_day_label_height)
+        mode_label_layout.addWidget(self._mode_label)
+        mode_label_layout.addStretch()
+        return container
 
 
 __all__ = ["CalendarWidget", "CalendarViewMode"]

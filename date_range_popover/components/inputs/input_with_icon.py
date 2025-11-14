@@ -226,8 +226,8 @@ class InputWithIcon(QWidget):
             letter-spacing: 1px;
             font-family: "Trebuchet MS";
             outline: none;
-            selection-background-color: #143a87;
-            selection-color: #ffffff;
+            selection-background-color: {style.selection_background};
+            selection-color: {style.selection_text_color};
             QLineEdit::placeholder {{
                 color: {style.placeholder_color};
                 letter-spacing: 1px;

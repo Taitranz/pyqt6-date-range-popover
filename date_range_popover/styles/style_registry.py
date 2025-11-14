@@ -108,6 +108,8 @@ class StyleRegistry:
                 border_hover=palette.input_border_hover,
                 border_focus=palette.input_border_focus,
                 border_previous_focus=palette.input_border_previous_focus,
+                selection_background=palette.input_selection_background,
+                selection_text_color=palette.input_selection_text_color,
             )
         }
 
