@@ -27,6 +27,14 @@ dependencies = [
     "PyQt6>=6.5",
 ]
 
+[project.optional-dependencies]
+test = [
+    "pytest>=7.4",
+    "pytest-qt>=4.3",
+    "pytest-cov>=4.1",
+    "pytest-env>=0.6",
+]
+
 [project.urls]
 Homepage = "https://github.com/Taitranz/pyqt6-date-range-popover"
 Source = "https://github.com/Taitranz/pyqt6-date-range-popover"

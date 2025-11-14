@@ -41,6 +41,18 @@ python -m examples.basic_popover_demo
 
 That script opens a centered popover, prints selected dates/ranges to stdout, and shows how the signals behave. I often duplicate that module when testing different configs.
 
+## Automated tests
+
+```bash
+pip install -e .[test]
+pytest --maxfail=1 --disable-warnings --cov=date_range_popover
+```
+
+- `pytest.ini` keeps discovery strict (`testpaths`, strict markers) so widget regressions surface quickly.
+- `tests/conftest.py` forces `QT_QPA_PLATFORM=offscreen` before Qt spins up, so the suite runs fine without an X server.
+- `pytest-qt` drives widget-level tests via the built-in `qtbot` fixture while session-scoped `QApplication` setup also lives in `tests/conftest.py`.
+- CI or local scripts can reuse the same command; coverage is optional but helpful for spotting regressions in the state manager/validation helpers.
+
 ## Embed it in your app
 
 ```python
