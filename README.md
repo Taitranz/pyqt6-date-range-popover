@@ -9,6 +9,18 @@ I built this PyQt6 popover because I wanted a compact date and range picker I co
 - A consistent style system driven by `ColorPalette`, `LayoutConfig`, and `StyleRegistry`, plus keyboard-friendly focus handling and track animations.
 - A runnable demo under `examples/basic_popover_demo.py` that mirrors the code shown below.
 
+## UI preview
+
+Here are a few of the core views you get out of the box:
+
+| Day view | Custom range |
+| --- | --- |
+| ![Day view](docs/images/Day_View.png) | ![Custom range](docs/images/Custom_Range.png) |
+
+| Month view | Year view |
+| --- | --- |
+| ![Month view](docs/images/Month_View.png) | ![Year view](docs/images/Year_View.png) |
+
 ## Install
 
 ```bash
