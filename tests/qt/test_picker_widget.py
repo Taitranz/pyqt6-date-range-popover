@@ -37,9 +37,7 @@ def test_picker_applies_initial_range_and_mode(qtbot: QtBot) -> None:
     selected = picker.selected_range
     assert selected.start_date == start
     assert selected.end_date == end
-    assert (
-        cast(Any, picker)._state_manager.state.mode is PickerMode.CUSTOM_RANGE
-    )
+    assert cast(Any, picker)._state_manager.state.mode is PickerMode.CUSTOM_RANGE
 
 
 def test_set_mode_updates_sliding_track(qtbot: QtBot) -> None:
@@ -61,9 +59,7 @@ def test_set_mode_updates_sliding_track(qtbot: QtBot) -> None:
         )
 
     qtbot.waitUntil(track_reached, timeout=1500)
-    assert (
-        cast(Any, picker)._state_manager.state.mode is PickerMode.CUSTOM_RANGE
-    )
+    assert cast(Any, picker)._state_manager.state.mode is PickerMode.CUSTOM_RANGE
 
 
 def test_cancel_button_emits_cancelled_signal(qtbot: QtBot) -> None:

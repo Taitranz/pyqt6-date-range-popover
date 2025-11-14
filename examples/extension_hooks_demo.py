@@ -80,9 +80,7 @@ class LoggingObserver:
             else "?"
         )
         end_date = (
-            date_range.end_date.toString("yyyy-MM-dd")
-            if date_range.end_date is not None
-            else "?"
+            date_range.end_date.toString("yyyy-MM-dd") if date_range.end_date is not None else "?"
         )
         self.output.append(f"[range] {start_date} -> {end_date}")
 
@@ -103,9 +101,7 @@ class AnalyticsObserver:
         start_date = (
             date_range.start_date.toJulianDay() if date_range.start_date is not None else "none"
         )
-        end_date = (
-            date_range.end_date.toJulianDay() if date_range.end_date is not None else "none"
-        )
+        end_date = date_range.end_date.toJulianDay() if date_range.end_date is not None else "none"
         self.captured_events.append(f"range:{(start_date, end_date)}")
 
     def on_cancelled(self) -> None:
