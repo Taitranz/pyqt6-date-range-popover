@@ -22,6 +22,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - CI matrix now targets PyQt 6.5.x and 6.6.x while 6.7.x wheels remain unstable on linux.
 - Removed the `PyQt6-Qt6-OpenGL` reinstall step in CI because no wheels exist for the pinned PyQt6 versions.
 - Regression tests skip the popover `show()` cycle when ``QT_QPA_PLATFORM=offscreen`` to avoid PyQt headless crashes while still exercising the behavior locally.
+- Re-enabled PyQt 6.7.x coverage (using 6.7.1+) now that the upstream Qt symbol issue is fixed.
 
 ## [0.1.0] - 2024-06-01
 
