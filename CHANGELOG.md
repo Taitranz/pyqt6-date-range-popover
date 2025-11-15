@@ -14,8 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Tightened theme validation to ensure invalid mapping payloads bubble up with clear errors.
-- Pinned the runtime dependency to `PyQt6<6.7` to avoid upstream Qt 6.7 symbol
-  loading failures on Linux runners (`_ZN5QFont11tagToStringEj`).
+- Pinned the runtime dependency to `PyQt6<6.8` (still blocking 6.8+ until tested) while
+  allowing 6.7.1+, whose refreshed Qt bundles resolve the `_ZN5QFont11tagToStringEj`
+  crash seen with 6.7.0 on Linux runners.
 
 ### Tests
 - Broadened property/edge-case coverage for `DatePickerConfig`, `Theme`, and core validators.
