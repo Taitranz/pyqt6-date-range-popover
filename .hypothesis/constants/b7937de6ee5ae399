@@ -1,4 +1,0 @@
-# file: C:\Users\taitr\OneDrive\Desktop\Projects\valgo-component-designs\date-select-menu\date_range_popover\components\inputs\date_time_selector.py
-# hypothesis_version: 6.147.0
-
-[100, 'CUSTOM_DATE_RANGE', 'DateTimeSelector', 'GO_TO_DATE', 'HH:MM', 'HH:mm', 'ModeLiteral', 'YYYY-MM-DD', '^\\d{4}-\\d{2}-\\d{2}$', 'assets', 'calender.svg', 'clock.svg', 'custom_date_range', 'go_to_date', 'yyyy-MM-dd']

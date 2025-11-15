@@ -1,4 +1,0 @@
-# file: C:\Users\taitr\OneDrive\Desktop\Projects\valgo-component-designs\date-select-menu\date_range_popover\managers\state_manager.py
-# hypothesis_version: 6.147.0
-
-['DatePickerState', 'N/A', 'PickerMode', 'Selecting date: %s', 'selected_date', 'selected_range', 'selected_range.end', 'selected_range.start', 'visible_month', 'yyyy-MM', 'yyyy-MM-dd']

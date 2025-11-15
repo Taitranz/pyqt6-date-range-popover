@@ -1,4 +1,0 @@
-# file: C:\Users\taitr\OneDrive\Desktop\Projects\valgo-component-designs\date-select-menu\date_range_popover\components\__init__.py
-# hypothesis_version: 6.147.0
-
-['BasicButton', 'ButtonStrip', 'CUSTOM_DATE_RANGE', 'CalendarViewMode', 'CalendarWidget', 'DateTimeSelector', 'DraggableHeaderStrip', 'GO_TO_DATE', 'InputWithIcon', 'ModeLiteral']
