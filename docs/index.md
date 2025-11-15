@@ -1,4 +1,4 @@
-# Date Range Popover
+﻿# Date Range Popover
 
 `date_range_popover` packages a production-ready PySide6 date & range picker that
 drops cleanly into data-entry tools and internal desktop apps.
@@ -35,10 +35,11 @@ app.exec()
 
 ## Support Matrix
 
-- Python 3.10 – 3.13
-- PySide6 6.5 – 6.10
+- Python 3.10 â€“ 3.13
+- PySide6 6.5 â€“ 6.10
 - Linux, macOS, and Windows targets (Qt handles windowing differences).
 
 Report issues or start discussions on
-[GitHub](https://github.com/Taitranz/pyqt6-date-range-popover).
+[GitHub](https://github.com/Taitranz/PySide6-Date-Range-Popover).
+
 

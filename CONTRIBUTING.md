@@ -1,4 +1,4 @@
-# Contributing
+﻿# Contributing
 
 Thanks for helping improve `date_range_popover`! This guide describes how to set
 up a development environment, run the quality gates, and submit changes.
@@ -6,20 +6,20 @@ up a development environment, run the quality gates, and submit changes.
 ## Maintenance cadence
 
 I am not actively iterating on the project, so issues and pull requests may sit for
-longer than usual. Please keep contributions focused and self-contained so they’re
+longer than usual. Please keep contributions focused and self-contained so theyâ€™re
 easier to review when I can make time.
 
 ## Requirements
 
-- Python 3.10 – 3.13
+- Python 3.10 â€“ 3.13
 - Pip + virtualenv (recommended)
 - System packages required by PySide6 / Qt (on Ubuntu: `sudo apt-get install libxcb-xinerama0`)
 
 ## Environment Setup
 
 ```bash
-git clone https://github.com/Taitranz/pyqt6-date-range-popover.git
-cd pyqt6-date-range-popover
+git clone https://github.com/Taitranz/PySide6-Date-Range-Popover.git
+cd PySide6-Date-Range-Popover
 python -m venv .venv
 source .venv/bin/activate  # .venv\Scripts\activate on Windows
 pip install -e ".[test,dev,docs]"
@@ -45,7 +45,7 @@ pytest --maxfail=1 --disable-warnings \
 mkdocs build --strict
 ```
 
-CI mirrors these steps across Python 3.10–3.13 and PySide6 6.5–6.10, so matching
+CI mirrors these steps across Python 3.10â€“3.13 and PySide6 6.5â€“6.10, so matching
 the commands locally prevents surprises.
 
 ## Coding Standards
@@ -65,4 +65,5 @@ the commands locally prevents surprises.
 
 Please open an issue first if you plan to add a large feature so we can discuss
 scope and integration strategy. Thanks!
+
 

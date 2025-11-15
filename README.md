@@ -1,7 +1,7 @@
 # Date Range Popover
 
-[![CI](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml/badge.svg)](https://github.com/Taitranz/pyqt6-date-range-popover/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/Taitranz/pyqt6-date-range-popover/branch/main/graph/badge.svg)](https://codecov.io/gh/Taitranz/pyqt6-date-range-popover)
+[![CI](https://github.com/Taitranz/PySide6-Date-Range-Popover/actions/workflows/ci.yml/badge.svg)](https://github.com/Taitranz/PySide6-Date-Range-Popover/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/Taitranz/PySide6-Date-Range-Popover/branch/main/graph/badge.svg)](https://codecov.io/gh/Taitranz/PySide6-Date-Range-Popover)
 ![Python](https://img.shields.io/badge/python-3.10--3.13-blue)
 
 I built this PySide6 popover because I wanted a compact date and range picker I could drop into desktop tools without rewriting the same scaffolding each time.
@@ -42,7 +42,7 @@ pip install -e .
 pip install valgo-date-range-popover
 ```
 
-Everything comes from the `pyproject.toml` (PEP 621 via hatchling), so `pip`, `python -m build`, or `hatch build` all work. The repo URL is `https://github.com/Taitranz/pyqt6-date-range-popover`.
+Everything comes from the `pyproject.toml` (PEP 621 via hatchling), so `pip`, `python -m build`, or `hatch build` all work. The repo URL is `https://github.com/Taitranz/PySide6-Date-Range-Popover`.
 
 ## Run the demo
 

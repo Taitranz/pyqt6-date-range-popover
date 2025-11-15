@@ -1,4 +1,4 @@
-[build-system]
+﻿[build-system]
 requires = ["hatchling>=1.21.0"]
 build-backend = "hatchling.build"
 
@@ -54,8 +54,8 @@ docs = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Taitranz/pyqt6-date-range-popover"
-Source = "https://github.com/Taitranz/pyqt6-date-range-popover"
+Homepage = "https://github.com/Taitranz/PySide6-Date-Range-Popover"
+Source = "https://github.com/Taitranz/PySide6-Date-Range-Popover"
 
 [tool.hatch.build.targets.wheel]
 packages = ["date_range_popover"]
@@ -130,4 +130,5 @@ directory = "htmlcov"
 
 [tool.coverage.xml]
 output = "coverage.xml"
+
 
