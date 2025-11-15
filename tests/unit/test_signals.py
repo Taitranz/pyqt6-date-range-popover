@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, List
+from collections.abc import Callable
 
 from date_range_popover.utils.signals import connect_if_present, connect_signal
 
@@ -11,7 +11,7 @@ class DummySignal:
     """Minimal stand-in that mimics the PyQt connect API."""
 
     def __init__(self) -> None:
-        self._slots: List[Callable[[], None]] = []
+        self._slots: list[Callable[[], None]] = []
 
     def connect(self, slot: Callable[[], None]) -> Callable[[], None]:
         self._slots.append(slot)
@@ -47,4 +47,3 @@ def test_connect_if_present_returns_none_when_signal_missing() -> None:
     handle = connect_if_present(signal, slot)
     assert handle is slot
     assert signal.slots == [slot]
-

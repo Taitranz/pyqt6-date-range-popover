@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
 from date_range_popover.exceptions import InvalidConfigurationError
 from date_range_popover.styles.theme import ColorPalette, LayoutConfig
@@ -13,13 +15,13 @@ from date_range_popover.styles.theme import ColorPalette, LayoutConfig
         "rgb(255,255,255)",
         "#12345",
         "#GGGGGG",
-        123,  # type: ignore[arg-type]
+        123,
     ],
 )
-def test_color_palette_rejects_invalid_hex_values(candidate: object) -> None:
+def test_color_palette_rejects_invalid_hex_values(candidate: Any) -> None:
     """All palette tokens must be valid hex strings."""
     with pytest.raises(InvalidConfigurationError, match="window_background"):
-        ColorPalette(window_background=candidate)  # type: ignore[arg-type]
+        ColorPalette(window_background=candidate)
 
 
 def test_color_palette_accepts_alpha_hex_values() -> None:

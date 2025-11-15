@@ -40,4 +40,3 @@ def test_configure_basic_logging_is_noop_when_handlers_present() -> None:
         assert len(root.handlers) == original_count
     finally:
         root.removeHandler(handler)
-

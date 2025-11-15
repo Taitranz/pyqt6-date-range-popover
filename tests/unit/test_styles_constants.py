@@ -14,4 +14,3 @@ def test_create_label_font_uses_expected_weight_and_spacing() -> None:
     assert font.weight() == QFont.Weight.Bold
     assert font.letterSpacingType() == QFont.SpacingType.PercentageSpacing
     assert font.letterSpacing() == 96
-

@@ -27,7 +27,7 @@ def test_validate_hex_color_accepts_valid_values() -> None:
 def test_validate_hex_color_rejects_non_strings() -> None:
     """Non-string inputs must raise InvalidConfigurationError."""
     with pytest.raises(InvalidConfigurationError):
-        validate_hex_color(123)  # type: ignore[arg-type]
+        validate_hex_color(123)
     with pytest.raises(InvalidConfigurationError):
         validate_hex_color("#12345")
 
@@ -40,7 +40,7 @@ def test_validate_dimension_enforces_bounds() -> None:
     with pytest.raises(InvalidConfigurationError):
         validate_dimension(30, field_name="width", min_value=1, max_value=20)
     with pytest.raises(InvalidConfigurationError):
-        validate_dimension("10", field_name="width")  # type: ignore[arg-type]
+        validate_dimension("10", field_name="width")
 
 
 def test_validate_qdate_allows_none_when_configured() -> None:

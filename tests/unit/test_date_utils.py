@@ -57,4 +57,3 @@ def test_iter_month_days_emits_full_grid() -> None:
     assert len(days) == 42
     assert days[0].dayOfWeek() == 1  # The grid should start on Monday
     assert days[-1].dayOfWeek() == 7
-

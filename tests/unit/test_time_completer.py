@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from date_range_popover.components.inputs.time_completer import (
     create_time_completer,
     dismiss_time_popup,
@@ -56,8 +58,9 @@ def test_show_and_dismiss_time_popup_toggles_visibility(qapp: QApplication) -> N
     qapp.processEvents()
     popup = completer.popup()
     assert popup is not None
-    assert popup.isVisible()  # type: ignore[union-attr]
+    popup_widget = cast(QWidget, popup)
+    assert popup_widget.isVisible()
 
     dismiss_time_popup(line_edit)
     qapp.processEvents()
-    assert not popup.isVisible()  # type: ignore[union-attr]
+    assert not popup_widget.isVisible()

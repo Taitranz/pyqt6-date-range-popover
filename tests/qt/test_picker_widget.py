@@ -53,7 +53,7 @@ def test_set_mode_updates_sliding_track(qtbot: QtBot) -> None:
 
     def track_reached() -> bool:
         internal_picker = cast(Any, picker)
-        return (
+        return bool(
             internal_picker._sliding_track.current_position == target_position
             and internal_picker._sliding_track.current_width == target_width
         )
