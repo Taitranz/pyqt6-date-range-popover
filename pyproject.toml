@@ -26,7 +26,9 @@ classifiers = [
     "Topic :: Software Development :: User Interfaces",
 ]
 dependencies = [
-    "PyQt6>=6.5",
+    # PyQt6 6.7.x ships Qt 6.7 which currently fails to load on GitHub runners
+    # with ``_ZN5QFont11tagToStringEj`` symbol errors. Pin to <6.7 until upstream fixes the wheels.
+    "PyQt6>=6.5,<6.7",
 ]
 
 [project.optional-dependencies]

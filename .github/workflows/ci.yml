@@ -16,7 +16,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version: ["3.10", "3.11", "3.12", "3.13"]
-        pyqt-version: ["6.5.3", "6.6.1", "6.7.3"]
+        pyqt-version: ["6.5.3", "6.6.1"]
 
     steps:
       - name: Checkout
